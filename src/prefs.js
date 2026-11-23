@@ -13,7 +13,7 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         const power = new Adw.PreferencesGroup({title: _('Power')});
         const row = new Adw.SwitchRow({
             title: _('Allow screen blanking'),
-            subtitle: _('The screen follows GNOME’s idle settings. Applies the next time Keep Awake is turned on.'),
+            subtitle: _('Applies next time Keep Awake turns on.'),
         });
         settings.bind('allow-screen-blanking', row, 'active', Gio.SettingsBindFlags.DEFAULT);
         power.add(row);
@@ -22,7 +22,6 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         const appearance = new Adw.PreferencesGroup({title: _('Appearance')});
         const panelIcon = new Adw.SwitchRow({
             title: _('Show panel icon'),
-            subtitle: _('Show a cup in the top panel while Keep Awake is active.'),
         });
         settings.bind('show-panel-icon', panelIcon, 'active', Gio.SettingsBindFlags.DEFAULT);
         appearance.add(panelIcon);
