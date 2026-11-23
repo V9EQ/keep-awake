@@ -57,6 +57,8 @@ export default class KeepAwakeExtension extends Extension {
         this._settingsId = 0;
         this._timer?.cancel();
         this._inhibitor?.destroy();
+        // Shell parents the submenu separately from the tile.
+        this._toggle?.menu.destroy();
         this._toggle?.destroy();
         this._indicator?.destroy();
         this._inhibitor = null;

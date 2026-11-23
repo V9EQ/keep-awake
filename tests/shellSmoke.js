@@ -58,6 +58,8 @@ export async function run() {
         const settings = extension.getSettings();
         const indicator = extension._indicator;
         const icon = extension._panelIcon;
+        const overlay = tile.menu.actor.get_parent();
+        const menuCount = overlay.get_n_children();
         assert(indicators.contains(icon), 'Icon is not in the Quick Settings indicators');
         assert(tile.toggleMode && !tile.checked && !icon.visible, 'Wrong default UI state');
         assert(tile.gicon.equal(icon.gicon) && icon.gicon.get_file().query_exists(null), 'Missing shared SVG');
@@ -98,9 +100,15 @@ export async function run() {
 
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && requests.length === 4, 'activation before disabling');
+        menu.open();
+        tile.menu.open();
+        assert(tile.menu.isOpen, 'Could not open the timer submenu');
         assert(Main.extensionManager.disableExtension(UUID), 'Could not disable extension');
         await waitFor(() => !findTile() && requests[3].closed && !indicators.get_children().includes(indicator),
             'disable cleanup');
+        assert(overlay.get_n_children() === menuCount - 1, 'Disabling must remove the submenu actor');
+        assert(!tile.menu.isOpen, 'Disabling must close the timer submenu');
+        menu.close();
         settings.set_boolean('show-panel-icon', false);
         assert(Main.extensionManager.enableExtension(UUID), 'Could not re-enable extension');
         await waitFor(() => findTile()?.reactive, 'tile recreation');
@@ -110,6 +118,15 @@ export async function run() {
         assert(!extension._panelIcon.visible, 'Panel icon preference did not survive re-enable');
         findTile().emit('clicked', 1);
         await waitFor(() => requests[4].closed, 'cleanup after final activation');
+
+        for (let i = 0; i < 10; i++) {
+            assert(Main.extensionManager.disableExtension(UUID), 'Could not disable extension');
+            await waitFor(() => !findTile(), 'tile removal');
+            assert(overlay.get_n_children() === menuCount - 1, 'Submenu retained after disable');
+            assert(Main.extensionManager.enableExtension(UUID), 'Could not re-enable extension');
+            await waitFor(() => findTile()?.reactive, 'tile recreation after repeated enable');
+            assert(overlay.get_n_children() === menuCount, 'Submenus accumulated after re-enable');
+        }
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)
