@@ -26,7 +26,8 @@ git diff --check
 `make check` checks JavaScript syntax and the bundle UUID. `make test` additionally
 requires GJS, `dbus-run-session`, and `timeout`. It uses a stand-in session manager
 on a private bus to check activation, rejection, timeout, cleanup, and service
-loss. It does not change desktop settings.
+loss. A separate check covers one-shot timer expiry and cancellation. Neither
+changes desktop settings.
 
 For a live check, use a test session with screen blanking and automatic suspend
 already configured. With the tile on, wait past both timeouts. With it off,
@@ -35,4 +36,5 @@ verify normal behavior resumes and the cup icon disappears. Use
 this extension's request without relying on the global inhibited state, which
 other applications can affect. While active, disable the extension or manually
 lock the session; verify the request disappears and the tile returns off after
-re-enabling or unlocking. Verify manual suspend still works.
+re-enabling or unlocking. Verify that changing timer presets rearms or cancels
+the countdown, expiry releases the inhibitor, and manual suspend still works.

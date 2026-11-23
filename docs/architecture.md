@@ -2,11 +2,16 @@
 
 ## Quick Settings
 
-`src/extension.js` creates a native `QuickToggle` and adds it through
+`src/extension.js` creates a native `QuickMenuToggle` and adds it through
 `Main.panel.statusArea.quickSettings.addExternalIndicator()`. The tile and
 `SystemIndicator` share a bundled symbolic coffee cup. Shell places the status
 icon with its other Quick Settings indicators. It is visible only when an
 inhibitor is active.
+
+The tile submenu shows the timer presets. `src/awakeTimer.js` owns one GLib
+one-shot source, armed after successful activation and removed when Keep Awake
+turns off or the extension is disabled. It measures time while the system is
+awake. Presets are kept for as long as the extension is enabled.
 
 The extension uses the default `user` session mode. Shell disables it when the
 session locks. It recreates the tile in the off state after unlocking.
@@ -42,8 +47,8 @@ guides reviewed for the extension.
 | 50 | [50][guide50] | [50.0][shell50] | [50.0][session50] | [50.0][power50] |
 | 51 | [51][guide51] | [51.0][shell51] | [51.0][session51] | [51.0][power51] |
 
-- **48:** The Quick Settings changes to `QuickMenuToggle` styling do not affect
-  this plain `QuickToggle`. The second `Inhibit` argument is still documented as
+- **48:** `QuickMenuToggle` provides its own style and menu; no custom CSS is
+  needed. The second `Inhibit` argument is still documented as
   an X11 window ID; zero means no window.
 - **49:** The built-in quick toggles changed, but the external registration API
   did not. The second `Inhibit` argument is now ignored without a signature change.

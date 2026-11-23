@@ -12,6 +12,7 @@ check:
 
 test: check
 	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/sessionInhibitor.js
+	timeout 15s gjs -m tests/awakeTimer.js
 
 pack: check
 	rm -rf "$(STAGE)"
@@ -19,7 +20,8 @@ pack: check
 	cp src/*.js src/metadata.json LICENSE "$(STAGE)/"
 	cp -R icons "$(STAGE)/"
 	gnome-extensions pack --force --out-dir=dist \
-		--extra-source=sessionInhibitor.js --extra-source=icons --extra-source=LICENSE "$(STAGE)"
+		--extra-source=awakeTimer.js --extra-source=sessionInhibitor.js \
+		--extra-source=icons --extra-source=LICENSE "$(STAGE)"
 
 install: pack
 	gnome-extensions install --force "$(BUNDLE)"

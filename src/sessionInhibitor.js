@@ -43,10 +43,17 @@ export class SessionInhibitor {
             this._start();
             break;
         case State.ON:
-            this._stop();
-            this._setState(State.OFF);
+            this.deactivate();
             break;
         }
+    }
+
+    deactivate() {
+        if (!this._request)
+            return;
+
+        this._stop();
+        this._setState(State.OFF);
     }
 
     destroy() {

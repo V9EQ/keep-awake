@@ -4,8 +4,10 @@ import Gio from 'gi://Gio';
 
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {QuickToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+import {Ornament} from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {QuickMenuToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
+import {AwakeTimer} from './awakeTimer.js';
 import {SessionInhibitor, State} from './sessionInhibitor.js';
 
 export default class KeepAwakeExtension extends Extension {
@@ -16,15 +18,21 @@ export default class KeepAwakeExtension extends Extension {
         this._panelIcon = this._indicator._addIndicator();
         this._panelIcon.gicon = icon;
         this._panelIcon.accessible_name = _('Keep Awake is active');
-        this._toggle = new QuickToggle({
+        this._toggle = new QuickMenuToggle({
             title,
-            accessibleName: title,
             gicon: icon,
             toggleMode: true,
+            menuButtonAccessibleName: _('Keep Awake timer'),
         });
         this._indicator.quickSettingsItems.push(this._toggle);
-        this._inhibitor = new SessionInhibitor(this.uuid, _('Keep the session awake'),
-            state => this._updateToggle(state), this.getLogger());
+        this._timer = new AwakeTimer(() => this._inhibitor.deactivate());
+        this._duration = 0;
+        this._timerItems = new Map();
+        this._addTimerItems();
+        this._inhibitor = new SessionInhibitor(this.uuid, _('Keep the session awake'), state => {
+            this._updateTimer();
+            this._updateToggle(state);
+        }, this.getLogger());
         this._toggle.connect('clicked', () => {
             this._inhibitor.toggle();
             this._updateToggle(this._inhibitor.state);
@@ -34,6 +42,7 @@ export default class KeepAwakeExtension extends Extension {
     }
 
     disable() {
+        this._timer?.cancel();
         this._inhibitor?.destroy();
         this._toggle?.destroy();
         this._indicator?.destroy();
@@ -41,6 +50,41 @@ export default class KeepAwakeExtension extends Extension {
         this._toggle = null;
         this._panelIcon = null;
         this._indicator = null;
+        this._timer = null;
+        this._timerItems = null;
+    }
+
+    _addTimerItems() {
+        const menu = this._toggle.menu;
+        menu.setHeader('alarm-symbolic', _('Timer'));
+        for (const [seconds, label] of [
+            [0, _('No timer')],
+            [15 * 60, _('15 minutes')],
+            [30 * 60, _('30 minutes')],
+            [60 * 60, _('1 hour')],
+        ]) {
+            const item = menu.addAction(label, () => this._selectDuration(seconds));
+            item.setOrnament(seconds === this._duration ? Ornament.DOT : Ornament.NONE);
+            this._timerItems.set(seconds, {item, label});
+        }
+    }
+
+    _selectDuration(seconds) {
+        if (seconds === this._duration)
+            return;
+
+        this._timerItems.get(this._duration).item.setOrnament(Ornament.NONE);
+        this._duration = seconds;
+        this._timerItems.get(seconds).item.setOrnament(Ornament.DOT);
+        this._updateTimer();
+        this._updateToggle(this._inhibitor.state);
+    }
+
+    _updateTimer() {
+        if (this._inhibitor.state === State.ON)
+            this._timer.restart(this._duration);
+        else
+            this._timer.cancel();
     }
 
     _updateToggle(state) {
@@ -52,6 +96,7 @@ export default class KeepAwakeExtension extends Extension {
             [State.STARTING]: _('Starting…'),
             [State.ERROR]: _('Could not start'),
         };
-        this._toggle.subtitle = subtitles[state] ?? null;
+        const timerLabel = this._duration ? this._timerItems.get(this._duration).label : null;
+        this._toggle.subtitle = subtitles[state] ?? timerLabel;
     }
 }

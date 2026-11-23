@@ -31,6 +31,14 @@ Open Quick Settings from the top-right of the panel and select **Keep Awake**.
 The tile is highlighted only after GNOME accepts the inhibitor. Select it again
 to release it. If the session manager is unavailable, the tile cannot be turned on.
 
+## Timer
+
+Use the arrow on the tile to choose **15 minutes**, **30 minutes**, **1 hour**,
+or **No timer** (the default). The countdown starts when Keep Awake turns on.
+Choosing a different duration while it is on starts a new countdown; choosing
+**No timer** cancels the countdown without turning Keep Awake off. The selected
+duration is shown on the tile, not the remaining time.
+
 ## Build and removal
 
 `make pack` produces the bundle in `dist/` without installing it. See
