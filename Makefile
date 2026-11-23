@@ -17,8 +17,9 @@ pack: check
 	rm -rf "$(STAGE)"
 	mkdir -p "$(STAGE)" dist
 	cp src/*.js src/metadata.json LICENSE "$(STAGE)/"
+	cp -R icons "$(STAGE)/"
 	gnome-extensions pack --force --out-dir=dist \
-		--extra-source=sessionInhibitor.js --extra-source=LICENSE "$(STAGE)"
+		--extra-source=sessionInhibitor.js --extra-source=icons --extra-source=LICENSE "$(STAGE)"
 
 install: pack
 	gnome-extensions install --force "$(BUNDLE)"

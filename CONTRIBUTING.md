@@ -30,7 +30,8 @@ loss. It does not change desktop settings.
 
 For a live check, use a test session with screen blanking and automatic suspend
 already configured. With the tile on, wait past both timeouts. With it off,
-verify normal behavior resumes. Use `gnome-session-inhibit --list` to identify
+verify normal behavior resumes and the cup icon disappears. Use
+`gnome-session-inhibit --list` to identify
 this extension's request without relying on the global inhibited state, which
 other applications can affect. While active, disable the extension or manually
 lock the session; verify the request disappears and the tile returns off after

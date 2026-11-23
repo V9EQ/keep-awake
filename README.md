@@ -2,7 +2,8 @@
 
 A GNOME Shell **48–51** extension that adds a **Keep Awake** tile to Quick Settings,
 alongside Wi-Fi and Bluetooth. Turn it on to prevent screen dimming, blanking,
-automatic locking, and automatic suspend due to inactivity in GNOME.
+automatic locking, and automatic suspend due to inactivity in GNOME. A coffee cup
+in the top panel shows when Keep Awake is active.
 
 Turn it off to let GNOME use your usual timeouts. The mode starts off and resets
 when you lock the session, disable the extension, or log out. Manual locking and
@@ -41,6 +42,4 @@ gnome-extensions disable keep-awake@v9eq.github.io
 gnome-extensions uninstall keep-awake@v9eq.github.io
 ```
 
-[GPL-2.0-or-later](LICENSE). The monitor icon is provided by the system icon
-theme, with the free [Adwaita icon theme](https://gitlab.gnome.org/GNOME/adwaita-icon-theme)
-as the GNOME default. No artwork is bundled.
+[GPL-2.0-or-later](LICENSE), including the bundled coffee cup icon.

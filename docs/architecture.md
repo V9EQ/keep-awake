@@ -3,9 +3,10 @@
 ## Quick Settings
 
 `src/extension.js` creates a native `QuickToggle` and adds it through
-`Main.panel.statusArea.quickSettings.addExternalIndicator()`. The required
-`SystemIndicator` only registers the tile; there is no separate panel icon or
-custom CSS. The tile uses Adwaita's `video-display-symbolic` themed icon.
+`Main.panel.statusArea.quickSettings.addExternalIndicator()`. The tile and
+`SystemIndicator` share a bundled symbolic coffee cup. Shell places the status
+icon with its other Quick Settings indicators. It is visible only when an
+inhibitor is active.
 
 The extension uses the default `user` session mode. Shell disables it when the
 session locks. It recreates the tile in the off state after unlocking.
