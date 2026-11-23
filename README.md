@@ -2,8 +2,8 @@
 
 A GNOME Shell **48–51** extension that adds a **Keep Awake** tile to Quick Settings,
 alongside Wi-Fi and Bluetooth. Turn it on to prevent screen dimming, blanking,
-automatic locking, and automatic suspend due to inactivity in GNOME. A coffee cup
-in the top panel shows when Keep Awake is active.
+automatic locking, and automatic suspend due to inactivity in GNOME. An optional
+coffee cup in the top panel shows when Keep Awake is active.
 
 Turn it off to let GNOME use your usual timeouts. The mode starts off and resets
 when you disable the extension or log out. No system settings are changed.
@@ -47,6 +47,8 @@ Open **Keep Awake Settings** from the tile menu or run
   display at its normal timeouts while preventing automatic suspend. This does
   not turn the display off immediately. Changes apply the next time you turn on
   Keep Awake.
+- **Show panel icon** (on by default): Show the coffee cup only while Keep Awake
+  is active. Changes apply immediately, without affecting the tile or timer.
 
 With screen blanking allowed, the inhibitor and any timer continue after the
 session locks, but the tile and icon are hidden. In the default mode, locking

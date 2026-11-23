@@ -34,9 +34,10 @@ For a live check, use a test session with screen blanking and automatic suspend
 already configured. With the tile on, wait past both timeouts. With it off,
 verify normal behavior resumes and the cup icon disappears. Use
 `gnome-session-inhibit --list` to identify this extension's request without
-relying on the global inhibited state, which
-other applications can affect. Disabling the extension must always release its
+relying on the global inhibited state, which other applications can affect.
+Disabling the extension must always release its
 request. With **Allow screen blanking** off, locking must also release it. With
 it on, verify the screen blanks normally and the inhibitor persists through
 locking until the timer expires or you turn the mode off after unlocking.
-Verify that changing timer presets rearms or cancels the countdown.
+Verify that changing timer presets rearms or cancels the countdown and that
+changing **Show panel icon** takes effect without releasing the inhibitor.

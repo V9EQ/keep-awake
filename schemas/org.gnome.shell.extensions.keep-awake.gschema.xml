@@ -7,5 +7,10 @@
       <summary>Allow screen blanking</summary>
       <description>Let GNOME blank and lock the screen normally while Keep Awake prevents automatic suspend.</description>
     </key>
+    <key name="show-panel-icon" type="b">
+      <default>true</default>
+      <summary>Show panel icon</summary>
+      <description>Show the Keep Awake icon in the top panel when the mode is active.</description>
+    </key>
   </schema>
 </schemalist>

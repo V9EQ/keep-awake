@@ -6,7 +6,8 @@
 `Main.panel.statusArea.quickSettings.addExternalIndicator()`. The tile and
 `SystemIndicator` share a bundled symbolic coffee cup. Shell places the status
 icon with its other Quick Settings indicators. It is visible only when an
-inhibitor is active.
+inhibitor is active, the session is unlocked, and `show-panel-icon` is enabled.
+The visibility setting does not affect inhibition or timers.
 
 The tile submenu shows the timer presets. `src/awakeTimer.js` owns one GLib
 one-shot source, armed after successful activation and removed when Keep Awake
@@ -68,8 +69,8 @@ guides reviewed for the extension.
   remains synchronous and does not depend on removed St widget properties.
 
 GNOME Shell **51.1** was smoke-tested headless with a stand-in session manager:
-registration, toggle on/off, lock-mode transitions, timer expiry, and
-disable/re-enable. GNOME 48–50 were reviewed against upstream sources, not run in
+registration, toggle on/off, lock-mode transitions, timer expiry, icon
+preferences, and disable/re-enable. GNOME 48–50 were reviewed against upstream sources, not run in
 live sessions. The headless check does not verify physical display blanking or
 suspend.
 

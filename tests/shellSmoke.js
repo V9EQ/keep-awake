@@ -55,6 +55,7 @@ export async function run() {
         await waitFor(() => findTile()?.reactive, 'interactive Keep Awake tile');
         const tile = findTile();
         const extension = Main.extensionManager.lookup(UUID).stateObj;
+        const settings = extension.getSettings();
         const indicator = extension._indicator;
         const icon = extension._panelIcon;
         assert(indicators.contains(icon), 'Icon is not in the Quick Settings indicators');
@@ -68,6 +69,11 @@ export async function run() {
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
         assert(requests[0].flags === 8, 'Default activation must inhibit idle only');
+        settings.set_boolean('show-panel-icon', false);
+        await waitFor(() => !icon.visible, 'hide the active icon immediately');
+        assert(tile.checked && !requests[0].closed, 'Hiding the icon must not stop Keep Awake');
+        settings.set_boolean('show-panel-icon', true);
+        await waitFor(() => icon.visible, 'restore the active icon immediately');
         tile.emit('clicked', 1);
         await waitFor(() => !tile.checked && !icon.visible && requests[0].closed, 'toggle off');
 
@@ -79,7 +85,7 @@ export async function run() {
         Main.sessionMode.popMode('unlock-dialog');
         assert(tile.visible && !tile.checked, 'Default policy must not reactivate after unlock');
 
-        extension.getSettings().set_boolean('allow-screen-blanking', true);
+        settings.set_boolean('allow-screen-blanking', true);
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 3, 'suspend-only activation');
         assert(requests[2].flags === 4, 'Allow blanking must inhibit suspend only');
@@ -95,9 +101,15 @@ export async function run() {
         assert(Main.extensionManager.disableExtension(UUID), 'Could not disable extension');
         await waitFor(() => !findTile() && requests[3].closed && !indicators.get_children().includes(indicator),
             'disable cleanup');
+        settings.set_boolean('show-panel-icon', false);
         assert(Main.extensionManager.enableExtension(UUID), 'Could not re-enable extension');
         await waitFor(() => findTile()?.reactive, 'tile recreation');
         assert(!findTile().checked && requests.length === 4, 'Mode did not reset');
+        findTile().emit('clicked', 1);
+        await waitFor(() => findTile().checked && requests.length === 5, 'activation with saved preference');
+        assert(!extension._panelIcon.visible, 'Panel icon preference did not survive re-enable');
+        findTile().emit('clicked', 1);
+        await waitFor(() => requests[4].closed, 'cleanup after final activation');
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)

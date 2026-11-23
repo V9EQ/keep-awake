@@ -18,6 +18,15 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         settings.bind('allow-screen-blanking', row, 'active', Gio.SettingsBindFlags.DEFAULT);
         power.add(row);
         page.add(power);
+
+        const appearance = new Adw.PreferencesGroup({title: _('Appearance')});
+        const panelIcon = new Adw.SwitchRow({
+            title: _('Show panel icon'),
+            subtitle: _('Show a cup in the top panel while Keep Awake is active.'),
+        });
+        settings.bind('show-panel-icon', panelIcon, 'active', Gio.SettingsBindFlags.DEFAULT);
+        appearance.add(panelIcon);
+        page.add(appearance);
         window.add(page);
     }
 }

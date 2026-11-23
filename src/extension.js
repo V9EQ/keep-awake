@@ -41,6 +41,8 @@ export default class KeepAwakeExtension extends Extension {
                 this._inhibitor.toggle(this._settings.get_boolean('allow-screen-blanking'));
             this._updateToggle(this._inhibitor.state);
         });
+        this._settingsId = this._settings.connect('changed::show-panel-icon', () =>
+            this._updateToggle(this._inhibitor.state));
         this._modeId = Main.sessionMode.connect('updated', () => this._onSessionModeChanged());
         this._onSessionModeChanged();
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
@@ -50,6 +52,9 @@ export default class KeepAwakeExtension extends Extension {
         if (this._modeId)
             Main.sessionMode.disconnect(this._modeId);
         this._modeId = 0;
+        if (this._settingsId)
+            this._settings.disconnect(this._settingsId);
+        this._settingsId = 0;
         this._timer?.cancel();
         this._inhibitor?.destroy();
         this._toggle?.destroy();
@@ -112,7 +117,8 @@ export default class KeepAwakeExtension extends Extension {
 
     _updateToggle(state) {
         this._toggle.checked = state === State.ON;
-        this._panelIcon.visible = state === State.ON && !Main.sessionMode.isLocked;
+        this._panelIcon.visible = state === State.ON && !Main.sessionMode.isLocked &&
+            this._settings.get_boolean('show-panel-icon');
         this._toggle.reactive = state !== State.UNAVAILABLE && state !== State.STARTING;
         const subtitles = {
             [State.UNAVAILABLE]: _('Unavailable'),
