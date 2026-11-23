@@ -4,5 +4,6 @@
     "description": "Prevent screen blanking, automatic locking, and suspend due to inactivity from Quick Settings.",
     "shell-version": ["48", "49", "50", "51"],
     "gettext-domain": "keep-awake@v9eq.github.io",
+    "url": "https://github.com/V9EQ/keep-awake",
     "version-name": "1.0"
 }
