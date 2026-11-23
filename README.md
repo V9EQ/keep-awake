@@ -12,14 +12,6 @@ when you disable the extension or log out. No system settings are changed.
 
 From a checkout, run `make install`. Building from source requires GNU make,
 Node.js for syntax checks, the GLib schema tools, and the `gnome-extensions` CLI.
-To install without building, download the ZIP from
-[Releases](https://github.com/V9EQ/keep-awake/releases/latest) and run the
-following command from the download directory:
-
-```sh
-gnome-extensions install keep-awake@v9eq.github.io.shell-extension.zip
-```
-
 Log out and back in, then enable the extension:
 
 ```sh
