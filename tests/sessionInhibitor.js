@@ -65,14 +65,16 @@ function ownName() {
     return Gio.bus_own_name_on_connection(bus, NAME, Gio.BusNameOwnerFlags.NONE, null, null);
 }
 
-async function startRequest(index) {
-    controller.toggle();
+async function startRequest(index, allowScreenBlanking = false) {
+    controller.toggle(allowScreenBlanking);
     assert(controller.state === State.STARTING, 'Expected pending state on activation');
     controller.toggle(); // A duplicate click must not start a second request.
     await waitFor(() => requests.length === index + 1, `Missing request ${index + 1}`);
     const request = requests[index];
-    assert(JSON.stringify(request.parameters) === JSON.stringify([APP, 0, REASON, 8]),
+    const flags = allowScreenBlanking ? 4 : 8;
+    assert(JSON.stringify(request.parameters) === JSON.stringify([APP, 0, REASON, flags]),
         'Wrong Inhibit arguments');
+    assert(controller.allowsScreenBlanking === allowScreenBlanking, 'Wrong active inhibition policy');
     assert(request.invocation.get_sender() !== bus.get_unique_name(), 'Expected a private client');
     return request;
 }
@@ -123,6 +125,13 @@ try {
     ownerId = ownName();
     await waitForState(State.OFF);
     assert(requests.length === 5, 'Keep Awake unexpectedly reactivated');
+
+    const blanking = await startRequest(5, true);
+    controller.deactivate();
+    await waitForState(State.OFF);
+    assert(!controller.allowsScreenBlanking, 'Deactivated request retained its policy');
+    await waitFor(() => !blanking.connected, 'Deactivation did not release the pending client');
+    accept(blanking);
     print('Session inhibitor integration checks passed');
 } finally {
     controller?.destroy();

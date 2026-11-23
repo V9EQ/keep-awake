@@ -3,7 +3,9 @@
     "name": "Keep Awake",
     "description": "Prevent screen blanking, automatic locking, and suspend due to inactivity from Quick Settings.",
     "shell-version": ["48", "49", "50", "51"],
+    "session-modes": ["user", "unlock-dialog"],
     "gettext-domain": "keep-awake@v9eq.github.io",
+    "settings-schema": "org.gnome.shell.extensions.keep-awake",
     "url": "https://github.com/V9EQ/keep-awake",
     "version-name": "1.0"
 }

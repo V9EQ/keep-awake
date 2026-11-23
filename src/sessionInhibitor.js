@@ -5,7 +5,7 @@ import GLib from 'gi://GLib';
 
 const SESSION_MANAGER = 'org.gnome.SessionManager';
 const SESSION_PATH = '/org/gnome/SessionManager';
-// GNOME stops its inactivity timers for IDLE; SUSPEND would also affect manual sleep.
+const INHIBIT_SUSPEND = 1 << 2;
 const INHIBIT_IDLE = 1 << 3;
 const DBUS_TIMEOUT_MS = 5000;
 
@@ -36,11 +36,15 @@ export class SessionInhibitor {
         return this._state;
     }
 
-    toggle() {
+    get allowsScreenBlanking() {
+        return this._request?.flags === INHIBIT_SUSPEND;
+    }
+
+    toggle(allowScreenBlanking = false) {
         switch (this._state) {
         case State.OFF:
         case State.ERROR:
-            this._start();
+            this._start(allowScreenBlanking ? INHIBIT_SUSPEND : INHIBIT_IDLE);
             break;
         case State.ON:
             this.deactivate();
@@ -76,8 +80,9 @@ export class SessionInhibitor {
         this._onStateChanged(state);
     }
 
-    _start() {
+    _start(flags) {
         const request = {
+            flags,
             cancellable: new Gio.Cancellable(),
             connection: null,
             closedId: 0,
@@ -117,7 +122,7 @@ export class SessionInhibitor {
         request.closedId = connection.connect('closed', (_connection, _vanished, error) =>
             this._fail(request, error ?? new Error('Inhibitor connection closed')));
         connection.call(this._owner, SESSION_PATH, SESSION_MANAGER, 'Inhibit',
-            new GLib.Variant('(susu)', [this._appId, 0, this._reason, INHIBIT_IDLE]),
+            new GLib.Variant('(susu)', [this._appId, 0, this._reason, request.flags]),
             new GLib.VariantType('(u)'), Gio.DBusCallFlags.NO_AUTO_START,
             DBUS_TIMEOUT_MS, request.cancellable, (source, result) => {
                 try {

@@ -13,18 +13,28 @@ one-shot source, armed after successful activation and removed when Keep Awake
 turns off or the extension is disabled. It measures time while the system is
 awake. Presets are kept for as long as the extension is enabled.
 
-The extension uses the default `user` session mode. Shell disables it when the
-session locks. It recreates the tile in the off state after unlocking.
+The extension declares `user` and `unlock-dialog` session modes so suspend-only
+inhibition and its timer can continue when GNOME locks the display. In the
+locked mode the extension hides the tile, submenu, and panel icon and does not
+accept clicks. Any idle-only request is released on lock. If Shell disables the
+extension in any mode, every inhibitor is released.
 
-## Idle inhibition
+## Session inhibition
 
 `src/sessionInhibitor.js` calls `org.gnome.SessionManager.Inhibit` on the user
-session bus. The `IDLE` flag (`8`) keeps GNOME Session from reporting the session
-as idle. GNOME Shell's screen shield therefore does not start its idle fade or
-lock. The GNOME Settings Daemon power plugin checks the same flag and cancels its
-idle dimming and sleep timers while the session is unlocked. There is no need to
-request `SUSPEND` (`4`), which can also inhibit sleep requested independently of
-inactivity. This does not cover external power policies.
+session bus. It requests exactly one flag for each activation:
+
+- **Keep the display on:** `IDLE` (`8`) prevents the session from becoming idle.
+  Shell does not start its idle fade or lock, and the GNOME Settings Daemon power
+  plugin cancels its dimming and automatic sleep timers in the unlocked session.
+- **Allow screen blanking:** `SUSPEND` (`4`) prevents the GNOME power plugin from
+  suspending due to inactivity without affecting Shell's idle fade or lock. GNOME
+  Session can also propagate this flag to logind, so the system may apply it to
+  manual sleep. This does not override external power policies.
+
+`src/prefs.js` binds the extension's `allow-screen-blanking` GSettings key to the
+preferences switch. The extension samples it when each request starts and keeps
+that policy for the life of the request.
 
 Each activation owns a private bus connection. GNOME Session drops the inhibitor
 when its sender disconnects, so turning the tile off or disabling the extension
@@ -58,12 +68,14 @@ guides reviewed for the extension.
   remains synchronous and does not depend on removed St widget properties.
 
 GNOME Shell **51.1** was smoke-tested headless with a stand-in session manager:
-registration, toggle on/off, and disable/re-enable. GNOME 48–50 were reviewed
-against upstream sources, not run in live sessions. The headless check does not
-verify physical display blanking or suspend.
+registration, toggle on/off, lock-mode transitions, timer expiry, and
+disable/re-enable. GNOME 48–50 were reviewed against upstream sources, not run in
+live sessions. The headless check does not verify physical display blanking or
+suspend.
 
 Additional references: [Quick Settings guide][quick-settings],
-[extension review guidelines][review], and [GNOME Session Manager D-Bus API][dbus].
+[session modes][modes], [extension review guidelines][review], and
+[GNOME Session Manager D-Bus API][dbus].
 
 [guide48]: https://gjs.guide/extensions/upgrading/gnome-shell-48.html
 [guide49]: https://gjs.guide/extensions/upgrading/gnome-shell-49.html
@@ -82,5 +94,6 @@ Additional references: [Quick Settings guide][quick-settings],
 [power50]: https://gitlab.gnome.org/GNOME/gnome-settings-daemon/-/blob/50.0/plugins/power/gsd-power-manager.c
 [power51]: https://gitlab.gnome.org/GNOME/gnome-settings-daemon/-/blob/51.0/plugins/power/gsd-power-manager.c
 [quick-settings]: https://gjs.guide/extensions/topics/quick-settings.html
+[modes]: https://gjs.guide/extensions/topics/session-modes.html
 [review]: https://gjs.guide/extensions/review-guidelines/review-guidelines.html
 [dbus]: https://gnome.pages.gitlab.gnome.org/gnome-session/re04.html

@@ -23,18 +23,20 @@ unzip -t dist/keep-awake@v9eq.github.io.shell-extension.zip
 git diff --check
 ```
 
-`make check` checks JavaScript syntax and the bundle UUID. `make test` additionally
-requires GJS, `dbus-run-session`, and `timeout`. It uses a stand-in session manager
+`make check` checks JavaScript syntax, the bundle UUID, and the schema.
+`make test` also requires GJS, `dbus-run-session`, and `timeout`. It uses a stand-in session manager
 on a private bus to check activation, rejection, timeout, cleanup, and service
 loss. A separate check covers one-shot timer expiry and cancellation. Neither
-changes desktop settings.
+changes desktop settings. `make test-shell` adds a headless UI smoke test using
+`gnome-shell-test-tool` (GNOME 50+), temporary settings, and a private bus.
 
 For a live check, use a test session with screen blanking and automatic suspend
 already configured. With the tile on, wait past both timeouts. With it off,
 verify normal behavior resumes and the cup icon disappears. Use
-`gnome-session-inhibit --list` to identify
-this extension's request without relying on the global inhibited state, which
-other applications can affect. While active, disable the extension or manually
-lock the session; verify the request disappears and the tile returns off after
-re-enabling or unlocking. Verify that changing timer presets rearms or cancels
-the countdown, expiry releases the inhibitor, and manual suspend still works.
+`gnome-session-inhibit --list` to identify this extension's request without
+relying on the global inhibited state, which
+other applications can affect. Disabling the extension must always release its
+request. With **Allow screen blanking** off, locking must also release it. With
+it on, verify the screen blanks normally and the inhibitor persists through
+locking until the timer expires or you turn the mode off after unlocking.
+Verify that changing timer presets rearms or cancels the countdown.

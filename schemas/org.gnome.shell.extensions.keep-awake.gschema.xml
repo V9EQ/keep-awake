@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<schemalist gettext-domain="keep-awake@v9eq.github.io">
+  <schema id="org.gnome.shell.extensions.keep-awake" path="/org/gnome/shell/extensions/keep-awake/">
+    <key name="allow-screen-blanking" type="b">
+      <default>false</default>
+      <summary>Allow screen blanking</summary>
+      <description>Let GNOME blank and lock the screen normally while Keep Awake prevents automatic suspend.</description>
+    </key>
+  </schema>
+</schemalist>

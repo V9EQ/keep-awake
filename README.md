@@ -6,16 +6,15 @@ automatic locking, and automatic suspend due to inactivity in GNOME. A coffee cu
 in the top panel shows when Keep Awake is active.
 
 Turn it off to let GNOME use your usual timeouts. The mode starts off and resets
-when you lock the session, disable the extension, or log out. Manual locking and
-suspend, lid-close behavior, and critical-battery actions remain under system
-control. No power or lock-screen settings are changed.
+when you disable the extension or log out. No system settings are changed.
 
 ## Installation
 
 From a checkout, run `make install`. Building from source requires GNU make,
-Node.js for syntax checks, and the `gnome-extensions` CLI. To install without
-building, download the ZIP from [Releases](https://github.com/V9EQ/keep-awake/releases/latest)
-and run the following command from the download directory:
+Node.js for syntax checks, the GLib schema tools, and the `gnome-extensions` CLI.
+To install without building, download the ZIP from
+[Releases](https://github.com/V9EQ/keep-awake/releases/latest) and run the
+following command from the download directory:
 
 ```sh
 gnome-extensions install keep-awake@v9eq.github.io.shell-extension.zip
@@ -38,6 +37,22 @@ or **No timer** (the default). The countdown starts when Keep Awake turns on.
 Choosing a different duration while it is on starts a new countdown; choosing
 **No timer** cancels the countdown without turning Keep Awake off. The selected
 duration is shown on the tile, not the remaining time.
+
+## Settings
+
+Open **Keep Awake Settings** from the tile menu or run
+`gnome-extensions prefs keep-awake@v9eq.github.io`.
+
+- **Allow screen blanking** (off by default): Let GNOME dim, lock, and blank the
+  display at its normal timeouts while preventing automatic suspend. This does
+  not turn the display off immediately. Changes apply the next time you turn on
+  Keep Awake.
+
+With screen blanking allowed, the inhibitor and any timer continue after the
+session locks, but the tile and icon are hidden. In the default mode, locking
+ends the active Keep Awake session. Manual locking works in both modes. With
+blanking allowed, GNOME’s suspend inhibitor may also affect manual sleep,
+depending on the GNOME version and system policy.
 
 ## Build and removal
 

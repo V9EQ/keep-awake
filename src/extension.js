@@ -4,7 +4,7 @@ import Gio from 'gi://Gio';
 
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {Ornament} from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {Ornament, PopupSeparatorMenuItem} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {QuickMenuToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
 import {AwakeTimer} from './awakeTimer.js';
@@ -12,6 +12,7 @@ import {SessionInhibitor, State} from './sessionInhibitor.js';
 
 export default class KeepAwakeExtension extends Extension {
     enable() {
+        this._settings = this.getSettings();
         const title = _('Keep Awake');
         const icon = new Gio.FileIcon({file: this.dir.resolve_relative_path('icons/keep-awake-symbolic.svg')});
         this._indicator = new SystemIndicator();
@@ -29,19 +30,26 @@ export default class KeepAwakeExtension extends Extension {
         this._duration = 0;
         this._timerItems = new Map();
         this._addTimerItems();
+        this._toggle.menu.addMenuItem(new PopupSeparatorMenuItem());
+        this._preferencesItem = this._toggle.menu.addAction(_('Keep Awake Settings'), () => this.openPreferences());
         this._inhibitor = new SessionInhibitor(this.uuid, _('Keep the session awake'), state => {
             this._updateTimer();
             this._updateToggle(state);
         }, this.getLogger());
         this._toggle.connect('clicked', () => {
-            this._inhibitor.toggle();
+            if (!Main.sessionMode.isLocked)
+                this._inhibitor.toggle(this._settings.get_boolean('allow-screen-blanking'));
             this._updateToggle(this._inhibitor.state);
         });
-        this._updateToggle(this._inhibitor.state);
+        this._modeId = Main.sessionMode.connect('updated', () => this._onSessionModeChanged());
+        this._onSessionModeChanged();
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
     }
 
     disable() {
+        if (this._modeId)
+            Main.sessionMode.disconnect(this._modeId);
+        this._modeId = 0;
         this._timer?.cancel();
         this._inhibitor?.destroy();
         this._toggle?.destroy();
@@ -52,6 +60,21 @@ export default class KeepAwakeExtension extends Extension {
         this._indicator = null;
         this._timer = null;
         this._timerItems = null;
+        this._preferencesItem = null;
+        this._settings = null;
+    }
+
+    _onSessionModeChanged() {
+        const {isLocked, allowSettings} = Main.sessionMode;
+        if (isLocked) {
+            this._toggle.menu.close();
+            if (!this._inhibitor.allowsScreenBlanking)
+                this._inhibitor.deactivate();
+        }
+
+        this._toggle.visible = !isLocked;
+        this._preferencesItem.visible = !isLocked && allowSettings;
+        this._updateToggle(this._inhibitor.state);
     }
 
     _addTimerItems() {
@@ -89,7 +112,7 @@ export default class KeepAwakeExtension extends Extension {
 
     _updateToggle(state) {
         this._toggle.checked = state === State.ON;
-        this._panelIcon.visible = state === State.ON;
+        this._panelIcon.visible = state === State.ON && !Main.sessionMode.isLocked;
         this._toggle.reactive = state !== State.UNAVAILABLE && state !== State.STARTING;
         const subtitles = {
             [State.UNAVAILABLE]: _('Unavailable'),
