@@ -26,8 +26,9 @@ git diff --check
 `make check` checks JavaScript syntax, the bundle UUID, and the schema.
 `make test` also requires GJS, `dbus-run-session`, and `timeout`. It uses a stand-in session manager
 on a private bus to check activation, rejection, timeout, cleanup, and service
-loss. A separate check covers one-shot timer expiry and cancellation. Neither
-changes desktop settings. `make test-shell` adds a headless UI smoke test using
+loss. Separate checks cover one-shot timer expiry and lid handling with a stand-in
+UPower and logind. These checks do not change desktop settings or suspend the
+machine. `make test-shell` adds a headless UI smoke test using
 `gnome-shell-test-tool` (GNOME 50+), temporary settings, and a private bus.
 
 For a live check, use a test session with screen blanking and automatic suspend
@@ -41,3 +42,9 @@ it on, verify the screen blanks normally and the inhibitor persists through
 locking until the timer expires or you turn the mode off after unlocking.
 Verify that changing timer presets rearms or cancels the countdown and that
 changing **Show panel icon** takes effect without releasing the inhibitor.
+
+For a hardware lid check, stop other lid handlers first. With an external display
+connected, verify **GNOME default** leaves the display usable on lid close and
+**Suspend on lid close** sleeps after two seconds, including while locked.
+Open the lid before the delay to check cancellation. Save work before testing;
+isolated D-Bus tests cannot verify hardware suspend or resume.

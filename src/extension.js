@@ -8,7 +8,11 @@ import {Ornament, PopupSeparatorMenuItem} from 'resource:///org/gnome/shell/ui/p
 import {QuickMenuToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
 import {AwakeTimer} from './awakeTimer.js';
+import {LidState, LidSuspend} from './lidSuspend.js';
 import {SessionInhibitor, State} from './sessionInhibitor.js';
+
+const Mode = Object.freeze({DEFAULT: 'default', AWAKE: 'awake', LID: 'lid'});
+const LID_SETTING = 'suspend-on-lid-close';
 
 export default class KeepAwakeExtension extends Extension {
     enable() {
@@ -23,12 +27,14 @@ export default class KeepAwakeExtension extends Extension {
             title,
             gicon: icon,
             toggleMode: true,
-            menuButtonAccessibleName: _('Keep Awake timer'),
+            menuButtonAccessibleName: _('Power modes and timer'),
         });
         this._indicator.quickSettingsItems.push(this._toggle);
         this._timer = new AwakeTimer(() => this._inhibitor.deactivate());
         this._duration = 0;
         this._timerItems = new Map();
+        this._modeItems = new Map();
+        this._addModeItems();
         this._addTimerItems();
         this._toggle.menu.addMenuItem(new PopupSeparatorMenuItem());
         this._preferencesItem = this._toggle.menu.addAction(_('Keep Awake Settings'), () => this.openPreferences());
@@ -36,13 +42,19 @@ export default class KeepAwakeExtension extends Extension {
             this._updateTimer();
             this._updateToggle(state);
         }, this.getLogger());
+        this._lid = new LidSuspend(title, _('Handle suspend on lid close'),
+            () => this._updateToggle(this._inhibitor.state), this.getLogger());
         this._toggle.connect('clicked', () => {
-            if (!Main.sessionMode.isLocked)
-                this._inhibitor.toggle(this._settings.get_boolean('allow-screen-blanking'));
+            this._selectMode(this._selectedMode() === Mode.DEFAULT ? Mode.AWAKE : Mode.DEFAULT);
             this._updateToggle(this._inhibitor.state);
         });
-        this._settingsId = this._settings.connect('changed::show-panel-icon', () =>
-            this._updateToggle(this._inhibitor.state));
+        this._settingsId = this._settings.connect('changed', (_settings, key) => {
+            if (key === LID_SETTING)
+                this._syncLidMode();
+            else if (key === 'show-panel-icon')
+                this._updateToggle(this._inhibitor.state);
+        });
+        this._syncLidMode();
         this._modeId = Main.sessionMode.connect('updated', () => this._onSessionModeChanged());
         this._onSessionModeChanged();
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
@@ -57,6 +69,7 @@ export default class KeepAwakeExtension extends Extension {
         this._settingsId = 0;
         this._timer?.cancel();
         this._inhibitor?.destroy();
+        this._lid?.destroy();
         // Shell parents the submenu separately from the tile.
         this._toggle?.menu.destroy();
         this._toggle?.destroy();
@@ -67,6 +80,8 @@ export default class KeepAwakeExtension extends Extension {
         this._indicator = null;
         this._timer = null;
         this._timerItems = null;
+        this._modeItems = null;
+        this._lid = null;
         this._preferencesItem = null;
         this._settings = null;
     }
@@ -84,9 +99,61 @@ export default class KeepAwakeExtension extends Extension {
         this._updateToggle(this._inhibitor.state);
     }
 
+    _addModeItems() {
+        const menu = this._toggle.menu;
+        menu.setHeader('preferences-system-symbolic', _('Power mode'));
+        for (const [mode, label] of [
+            [Mode.AWAKE, _('Keep Awake')],
+            [Mode.DEFAULT, _('GNOME default')],
+            [Mode.LID, _('Suspend on lid close')],
+        ]) {
+            const item = menu.addAction(label, () => this._selectMode(mode));
+            this._modeItems.set(mode, item);
+        }
+        menu.addMenuItem(new PopupSeparatorMenuItem(_('Keep Awake timer')));
+    }
+
+    _selectedMode(state = this._inhibitor.state) {
+        if (this._settings.get_boolean(LID_SETTING))
+            return Mode.LID;
+        if (state === State.ON || state === State.STARTING)
+            return Mode.AWAKE;
+        return Mode.DEFAULT;
+    }
+
+    _selectMode(mode) {
+        if (Main.sessionMode.isLocked)
+            return;
+
+        const lidSelected = this._settings.get_boolean(LID_SETTING);
+        if (mode === Mode.LID) {
+            if (lidSelected)
+                this._syncLidMode();
+            else
+                this._settings.set_boolean(LID_SETTING, true);
+            return;
+        }
+
+        if (lidSelected)
+            this._settings.set_boolean(LID_SETTING, false);
+        if (mode === Mode.DEFAULT)
+            this._inhibitor.deactivate();
+        else if (this._selectedMode() !== Mode.AWAKE)
+            this._inhibitor.toggle(this._settings.get_boolean('allow-screen-blanking'));
+    }
+
+    _syncLidMode() {
+        if (this._settings.get_boolean(LID_SETTING)) {
+            this._inhibitor.deactivate();
+            this._lid.start();
+        } else {
+            this._lid.stop();
+        }
+        this._updateToggle(this._inhibitor.state);
+    }
+
     _addTimerItems() {
         const menu = this._toggle.menu;
-        menu.setHeader('alarm-symbolic', _('Timer'));
         for (const [seconds, label] of [
             [0, _('No timer')],
             [15 * 60, _('15 minutes')],
@@ -118,16 +185,32 @@ export default class KeepAwakeExtension extends Extension {
     }
 
     _updateToggle(state) {
-        this._toggle.checked = state === State.ON;
+        const mode = this._selectedMode(state);
+        const lidSelected = mode === Mode.LID;
+        this._toggle.checked = lidSelected ? this._lid.state === LidState.ON : state === State.ON;
         this._panelIcon.visible = state === State.ON && !Main.sessionMode.isLocked &&
             this._settings.get_boolean('show-panel-icon');
-        this._toggle.reactive = state !== State.UNAVAILABLE && state !== State.STARTING;
+        // Keep the menu available even when either service cannot be reached.
+        this._modeItems.get(Mode.AWAKE).setSensitive(state !== State.UNAVAILABLE);
+        for (const [choice, item] of this._modeItems)
+            item.setOrnament(mode === choice ? Ornament.DOT : Ornament.NONE);
+        for (const {item} of this._timerItems.values())
+            item.setSensitive(!lidSelected);
+        if (lidSelected) {
+            this._toggle.subtitle = {
+                [LidState.STARTING]: _('Starting lid mode…'),
+                [LidState.ON]: _('Suspend on lid close'),
+                [LidState.ERROR]: _('Lid suspend unavailable'),
+            }[this._lid.state] ?? null;
+            return;
+        }
+
         const subtitles = {
             [State.UNAVAILABLE]: _('Unavailable'),
             [State.STARTING]: _('Starting…'),
             [State.ERROR]: _('Could not start'),
         };
         const timerLabel = this._duration ? this._timerItems.get(this._duration).label : null;
-        this._toggle.subtitle = subtitles[state] ?? timerLabel;
+        this._toggle.subtitle = subtitles[state] ?? (mode === Mode.AWAKE ? timerLabel : _('GNOME default'));
     }
 }

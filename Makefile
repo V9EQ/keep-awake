@@ -15,6 +15,7 @@ check:
 test: check
 	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/sessionInhibitor.js
 	timeout 15s gjs -m tests/awakeTimer.js
+	GIO_USE_VFS=local timeout 25s dbus-run-session -- sh -c 'DBUS_SYSTEM_BUS_ADDRESS="$$DBUS_SESSION_BUS_ADDRESS" exec gjs -m tests/lidSuspend.js'
 
 test-shell: pack
 	sh tests/run-shell-smoke.sh "$(abspath $(BUNDLE))" "$(CURDIR)/tests/shellSmoke.js"
@@ -26,7 +27,7 @@ pack: check
 	cp -R icons "$(STAGE)/"
 	cp "schemas/$(SCHEMA)" "$(STAGE)/schemas/"
 	gnome-extensions pack --force --out-dir=dist --schema="schemas/$(SCHEMA)" \
-		--extra-source=awakeTimer.js --extra-source=sessionInhibitor.js \
+		--extra-source=awakeTimer.js --extra-source=lidSuspend.js --extra-source=sessionInhibitor.js \
 		--extra-source=icons --extra-source=LICENSE "$(STAGE)"
 
 install: pack

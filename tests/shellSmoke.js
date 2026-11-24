@@ -63,13 +63,17 @@ export async function run() {
         assert(indicators.contains(icon), 'Icon is not in the Quick Settings indicators');
         assert(tile.toggleMode && !tile.checked && !icon.visible, 'Wrong default UI state');
         assert(tile.gicon.equal(icon.gicon) && icon.gicon.get_file().query_exists(null), 'Missing shared SVG');
-        const entries = tile.menu._getMenuItems();
-        assert(entries.slice(0, 4).map(item => item.label.text).join(',') === 'No timer,15 minutes,30 minutes,1 hour',
+        await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
+        const modes = [...extension._modeItems.values()];
+        assert(modes.map(item => item.label.text).join(',') === 'Keep Awake,GNOME default,Suspend on lid close',
+            'Missing power modes');
+        assert([...extension._timerItems.values()].map(({label}) => label).join(',') === 'No timer,15 minutes,30 minutes,1 hour',
             'Missing timer presets');
-        entries[1].activate(null);
-        assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
+        extension._timerItems.get(900).item.activate(null);
+        assert(tile.subtitle === 'GNOME default', 'Wrong initial power mode');
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
+        assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
         assert(requests[0].flags === 8, 'Default activation must inhibit idle only');
         settings.set_boolean('show-panel-icon', false);
         await waitFor(() => !icon.visible, 'hide the active icon immediately');
@@ -127,6 +131,14 @@ export async function run() {
             await waitFor(() => findTile()?.reactive, 'tile recreation after repeated enable');
             assert(overlay.get_n_children() === menuCount, 'Submenus accumulated after re-enable');
         }
+        extension._modeItems.get('awake').activate(null);
+        await waitFor(() => findTile().checked && requests.length === 6, 'Keep Awake menu option');
+        extension._modeItems.get('lid').activate(null);
+        await waitFor(() => requests[5].closed && findTile().subtitle === 'Lid suspend unavailable',
+            'switching to lid mode released the Keep Awake request');
+        extension._modeItems.get('default').activate(null);
+        assert(!settings.get_boolean('suspend-on-lid-close') && !findTile().checked,
+            'GNOME default did not clear lid mode');
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)
