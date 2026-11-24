@@ -46,10 +46,11 @@ refreshes on `MonitorsChanged`. It uses `is-builtin` rather than guessing from
 connector names or layout. The watcher is active only while the preference is
 enabled. With an external monitor in Standard mode, `src/lid.js` acquires a
 logind lid-switch inhibitor to avoid duplicate requests. It listens for UPower
-lid transitions and requests non-interactive suspend after a two-second delay.
-No request is made for an already-closed lid, and existing sleep restrictions
-are respected. Switching to Caffeine or disconnecting the monitor disarms the
-handler.
+lid transitions and requests non-interactive suspend after 200 ms. If that
+sleep cycle ends within 15 seconds and the lid is still closed, it retries once
+after 1.5 seconds. Opening the lid cancels pending work. Existing sleep
+restrictions are respected. Switching to Caffeine or disconnecting the monitor
+disarms the handler.
 
 ## GNOME 48–51 review
 

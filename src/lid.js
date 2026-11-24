@@ -9,7 +9,9 @@ const LOGIN_IFACE = `${LOGIN}.Manager`;
 const POWER = 'org.freedesktop.UPower';
 const POWER_PATH = '/org/freedesktop/UPower';
 const TIMEOUT_MS = 5000;
-const LID_DELAY_MS = 2000;
+const LID_DELAY_MS = 200;
+const RETRY_DELAY_MS = 1500;
+const EARLY_WAKE_US = 15 * GLib.USEC_PER_SEC;
 
 export const LidState = Object.freeze({OFF: 'off', STARTING: 'starting', ON: 'on', ERROR: 'error'});
 
@@ -36,6 +38,7 @@ export class LidSuspend {
             preparing: false,
             pending: false,
             generation: 0,
+            attempt: null,
         };
         this._run = run;
         this._setState(LidState.STARTING);
@@ -76,9 +79,7 @@ export class LidSuspend {
         this._connect(run, login, 'g-signal', (_proxy, _sender, name, parameters) => {
             if (name !== 'PrepareForSleep')
                 return;
-            run.preparing = parameters.get_child_value(0).get_boolean();
-            run.generation++;
-            this._clearTimer(run);
+            this._onSleepChanged(run, parameters.get_child_value(0).get_boolean());
         });
 
         const [canSuspend] = (await this._call(run, 'CanSuspend', null)).deepUnpack();
@@ -111,21 +112,43 @@ export class LidSuspend {
             return;
 
         run.closed = closed;
-        const generation = ++run.generation;
+        run.generation++;
+        run.attempt = null;
         this._clearTimer(run);
-        if (!closed || run.preparing || run.pending)
+        if (closed && !run.preparing && !run.pending)
+            this._schedule(run, LID_DELAY_MS, false);
+    }
+
+    _onSleepChanged(run, preparing) {
+        const wasPreparing = run.preparing;
+        run.preparing = preparing;
+        run.generation++;
+        this._clearTimer(run);
+        if (preparing || !wasPreparing)
             return;
 
-        run.timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, LID_DELAY_MS, () => {
+        const attempt = run.attempt;
+        run.attempt = null;
+        if (!attempt || attempt.retry || this._readLid(run.power) !== true)
+            return;
+
+        const elapsed = GLib.get_real_time() - attempt.startedAt;
+        if (elapsed >= 0 && elapsed <= EARLY_WAKE_US)
+            this._schedule(run, RETRY_DELAY_MS, true);
+    }
+
+    _schedule(run, delay, retry) {
+        const generation = run.generation;
+        run.timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
             run.timerId = 0;
-            this._suspend(run, generation).catch(error => this._fail(run, error));
+            this._suspend(run, generation, retry).catch(error => this._fail(run, error));
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    async _suspend(run, generation) {
+    async _suspend(run, generation, retry) {
         const stillClosed = () => this._run === run && run.generation === generation &&
-            !run.preparing && this._readLid(run.power) === true;
+            !run.preparing && !run.pending && this._readLid(run.power) === true;
         if (!stillClosed())
             return;
 
@@ -147,9 +170,12 @@ export class LidSuspend {
             return;
 
         run.pending = true;
+        run.attempt = {startedAt: GLib.get_real_time(), retry};
+        this._logger.info?.(retry ? 'Retrying suspend after a quick wake with the lid closed' : 'Requesting suspend on lid close');
         try {
             await this._call(run, 'Suspend', new GLib.Variant('(b)', [false]));
         } catch (error) {
+            run.attempt = null;
             // An independent sleep request may arrive between the Get and Suspend calls.
             if (Gio.DBusError.get_remote_error(error) !== `${LOGIN}.OperationInProgress`)
                 throw error;

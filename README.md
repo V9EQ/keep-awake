@@ -27,7 +27,7 @@ The arrow opens the mode selector, timer, and settings.
 | Setting | Effect |
 | --- | --- |
 | **Allow screen blanking** | Let the screen dim, lock, and blank while Caffeine prevents automatic suspend. Applies the next time Caffeine starts. |
-| **Sleep on lid close with an external monitor** | In Standard mode, suspend after the lid stays closed for two seconds with an external monitor connected. Off by default. |
+| **Sleep on lid close with an external monitor** | In Standard mode, suspend on lid close with an external monitor connected. On a quick wake, retry once if the lid is still closed. Off by default. |
 | **Show panel icon** | Show the coffee cup while Caffeine is active. |
 
 With screen blanking allowed, Caffeine continues through screen lock. Otherwise,

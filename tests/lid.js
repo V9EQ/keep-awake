@@ -92,7 +92,7 @@ try {
     await waitFor(() => controller.state === LidState.ON || controller.state === LidState.ERROR, 'Lid mode did not start');
     assert(controller.state === LidState.ON, warnings.join('\n'));
     assert(descriptorCount() === 2, 'Expected one owned inhibitor descriptor');
-    await sleep(2200);
+    await sleep(350);
     assert(requests === 0, 'Starting with the lid closed must not suspend');
 
     setLid(false);
@@ -100,12 +100,12 @@ try {
     setLid(true);
     await sleep(100);
     setLid(false);
-    await sleep(2100);
+    await sleep(350);
     assert(requests === 0, 'Opening the lid must cancel debounce');
 
     preparing = true;
     setLid(true);
-    await sleep(2200);
+    await sleep(350);
     assert(requests === 0, 'An existing sleep transition must not be duplicated');
     preparing = false;
     setLid(false);
@@ -114,15 +114,29 @@ try {
     await waitFor(() => requests === 1, 'Closing the lid must request one suspend');
     login.emit_signal('PrepareForSleep', new GLib.Variant('(b)', [true]));
     login.emit_signal('PrepareForSleep', new GLib.Variant('(b)', [false]));
+    await waitFor(() => requests === 2, 'Early wake with a closed lid must retry once');
+    login.emit_signal('PrepareForSleep', new GLib.Variant('(b)', [true]));
+    login.emit_signal('PrepareForSleep', new GLib.Variant('(b)', [false]));
+    await sleep(1700);
+    assert(requests === 2, 'A second early wake must not trigger another retry');
+
+    setLid(false);
     await sleep(100);
-    assert(requests === 1, 'Resume must not retrigger suspend for a closed lid');
+    setLid(true);
+    await waitFor(() => requests === 3, 'A fresh lid close must request suspend');
+    login.emit_signal('PrepareForSleep', new GLib.Variant('(b)', [true]));
+    login.emit_signal('PrepareForSleep', new GLib.Variant('(b)', [false]));
+    await sleep(100);
+    setLid(false);
+    await sleep(1700);
+    assert(requests === 3, 'Opening the lid after wake must cancel the retry');
 
     denied = true;
     setLid(false);
     await sleep(100);
     setLid(true);
     await waitFor(() => controller.state === LidState.ERROR, 'Suspend rejection must release custom lid policy');
-    assert(requests === 2 && warnings.length === 1, 'Expected one failed suspend request');
+    assert(requests === 4 && warnings.length === 1, 'Expected one failed suspend request');
     assert(descriptorCount() === 1, 'Failed policy retained its inhibitor descriptor');
     controller.start();
     await waitFor(() => controller.state === LidState.ON, 'Lid mode could not be rearmed');
