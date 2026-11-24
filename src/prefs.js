@@ -20,6 +20,12 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         settings.bind(Key.ALLOW_SCREEN_BLANKING, row, 'active', Gio.SettingsBindFlags.DEFAULT);
         power.add(row);
 
+        const lid = new Adw.SwitchRow({
+            title: _('Suspend on lid close with an external monitor'),
+            subtitle: _('Applies even when the Keep Awake tile is off. Does not prevent wake-ups.'),
+        });
+        settings.bind(Key.SUSPEND_ON_DOCKED_LID_CLOSE, lid, 'active', Gio.SettingsBindFlags.DEFAULT);
+        power.add(lid);
         page.add(power);
 
         const appearance = new Adw.PreferencesGroup({title: _('Appearance')});

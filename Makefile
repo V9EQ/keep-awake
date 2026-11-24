@@ -15,6 +15,7 @@ check:
 
 test: check
 	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/inhibitor.js
+	GIO_USE_VFS=local timeout 15s dbus-run-session -- sh -c 'export DBUS_SYSTEM_BUS_ADDRESS="$$DBUS_SESSION_BUS_ADDRESS"; exec gjs -m tests/lid.js'
 	timeout 15s gjs -m tests/timer.js
 
 test-shell: pack

@@ -7,6 +7,11 @@
       <summary>Allow screen blanking</summary>
       <description>Let GNOME blank and lock the screen normally while Keep Awake prevents automatic suspend.</description>
     </key>
+    <key name="suspend-on-docked-lid-close" type="b">
+      <default>false</default>
+      <summary>Suspend on lid close with an external monitor</summary>
+      <description>Request suspend when the lid is closed with an active external monitor while the extension is enabled.</description>
+    </key>
     <key name="show-panel-icon" type="b">
       <default>true</default>
       <summary>Show panel icon</summary>

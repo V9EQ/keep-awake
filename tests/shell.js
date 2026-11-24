@@ -55,6 +55,10 @@ export async function run() {
         assert(labels.join(',') === 'No timer,15 minutes,30 minutes,1 hour,Keep Awake Settings',
             'The submenu should only contain timer presets and settings');
         assert(tile.subtitle === null, 'There should be no default mode label');
+        assert(!extension._lidSuspend, 'Docked lid suspend must be off by default');
+        settings.set_boolean('suspend-on-docked-lid-close', true);
+        await waitFor(() => extension._lidSuspend, 'Enable the lid watcher while the tile is off');
+        const lidWatcher = extension._lidSuspend;
         extension._timerItems.get(900).item.activate(null);
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
@@ -73,6 +77,7 @@ export async function run() {
         Main.sessionMode.pushMode('unlock-dialog');
         await waitFor(() => !tile.checked && !tile.visible && !icon.visible && requests[1].closed,
             'default policy stops on lock');
+        assert(extension._lidSuspend === lidWatcher, 'Lock must leave the lid watcher running');
         Main.sessionMode.popMode('unlock-dialog');
         assert(tile.visible && !tile.checked, 'Default policy must not reactivate after unlock');
 
@@ -97,11 +102,16 @@ export async function run() {
             'disable cleanup');
         assert(overlay.get_n_children() === menuCount - 1, 'Disabling must remove the submenu actor');
         assert(!tile.menu.isOpen, 'Disabling must close the timer submenu');
+        assert(!extension._lidSuspend && lidWatcher._cancellable.is_cancelled(), 'Disable must stop watching the lid');
         menu.close();
         settings.set_boolean('show-panel-icon', false);
         assert(Main.extensionManager.enableExtension(UUID), 'Could not re-enable extension');
         await waitFor(() => findTile()?.reactive, 'tile recreation');
         assert(!findTile().checked && requests.length === 4, 'Mode did not reset');
+        const newWatcher = extension._lidSuspend;
+        assert(newWatcher && newWatcher !== lidWatcher, 'Lid preference did not survive re-enable');
+        settings.set_boolean('suspend-on-docked-lid-close', false);
+        await waitFor(() => !extension._lidSuspend && newWatcher._cancellable.is_cancelled(), 'Lid watcher cleanup');
         findTile().emit('clicked', 1);
         await waitFor(() => findTile().checked && requests.length === 5, 'activation with saved preference');
         assert(!extension._panelIcon.visible, 'Panel icon preference did not survive re-enable');

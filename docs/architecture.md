@@ -39,6 +39,19 @@ cancels pending work; connection closure completes asynchronously. Late replies
 cannot change a newer tile. If the session manager loses its bus name, the tile
 returns to unavailable without reactivating automatically.
 
+## Lid close with an external display
+
+In GNOME 48–51, `gsd-power` takes a low-level `handle-lid-switch` inhibitor
+when an external display is active and briefly during display changes. It does
+not read the old `lid-close-suspend-with-external-monitor` key, and [logind.conf]
+settings cannot override the inhibitor.
+
+`src/lid.js` sends one non-interactive [login1] `Suspend(false)` request on an
+open-to-closed `LidClosed` transition if [Mutter DisplayConfig][display-config]
+reports an active external monitor and GNOME Session is active. It does not
+remove the inhibitor, modify system policy, or retry after wake. The watcher
+continues in `unlock-dialog` and stops when the preference or extension is disabled.
+
 ## GNOME 48–51 review
 
 The same code path applies to all four releases. The table links to the tagged
@@ -91,3 +104,6 @@ Additional references: [Quick Settings guide][quick-settings],
 [modes]: https://gjs.guide/extensions/topics/session-modes.html
 [review]: https://gjs.guide/extensions/review-guidelines/review-guidelines.html
 [dbus]: https://gnome.pages.gitlab.gnome.org/gnome-session/re04.html
+[display-config]: https://gitlab.gnome.org/GNOME/mutter/-/blob/51.0/data/dbus-interfaces/org.gnome.Mutter.DisplayConfig.xml
+[login1]: https://www.freedesktop.org/software/systemd/man/latest/org.freedesktop.login1.html
+[logind.conf]: https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html

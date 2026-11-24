@@ -2,5 +2,6 @@
 
 export const Key = Object.freeze({
     ALLOW_SCREEN_BLANKING: 'allow-screen-blanking',
+    SUSPEND_ON_DOCKED_LID_CLOSE: 'suspend-on-docked-lid-close',
     SHOW_PANEL_ICON: 'show-panel-icon',
 });

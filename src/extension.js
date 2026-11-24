@@ -8,6 +8,7 @@ import {Ornament, PopupSeparatorMenuItem} from 'resource:///org/gnome/shell/ui/p
 import {QuickMenuToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
 import {SessionInhibitor, State} from './inhibitor.js';
+import {LidSuspend} from './lid.js';
 import {Key} from './settings.js';
 import {AwakeTimer} from './timer.js';
 
@@ -49,6 +50,9 @@ export default class KeepAwakeExtension extends Extension {
         });
         this._settingsId = this._settings.connect(`changed::${Key.SHOW_PANEL_ICON}`, () =>
             this._updateToggle(this._inhibitor.state));
+        this._lidSettingsId = this._settings.connect(`changed::${Key.SUSPEND_ON_DOCKED_LID_CLOSE}`, () =>
+            this._updateLidSuspend());
+        this._updateLidSuspend();
         this._modeId = Main.sessionMode.connect('updated', () => this._onSessionModeChanged());
         this._onSessionModeChanged();
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
@@ -61,6 +65,11 @@ export default class KeepAwakeExtension extends Extension {
         if (this._settingsId)
             this._settings.disconnect(this._settingsId);
         this._settingsId = 0;
+        if (this._lidSettingsId)
+            this._settings.disconnect(this._lidSettingsId);
+        this._lidSettingsId = 0;
+        this._lidSuspend?.destroy();
+        this._lidSuspend = null;
         this._timer?.cancel();
         this._inhibitor?.destroy();
         // Shell parents the submenu separately from the tile.
@@ -75,6 +84,15 @@ export default class KeepAwakeExtension extends Extension {
         this._timerItems = null;
         this._preferencesItem = null;
         this._settings = null;
+    }
+
+    _updateLidSuspend() {
+        if (this._settings.get_boolean(Key.SUSPEND_ON_DOCKED_LID_CLOSE)) {
+            this._lidSuspend ??= new LidSuspend(this.getLogger());
+        } else {
+            this._lidSuspend?.destroy();
+            this._lidSuspend = null;
+        }
     }
 
     _onSessionModeChanged() {
