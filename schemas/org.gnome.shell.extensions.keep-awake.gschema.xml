@@ -12,10 +12,5 @@
       <summary>Show panel icon</summary>
       <description>Show the Keep Awake icon in the top panel when the mode is active.</description>
     </key>
-    <key name="suspend-on-docked-lid-close" type="b">
-      <default>false</default>
-      <summary>Sleep on lid close with an external monitor</summary>
-      <description>Suspend when the lid closes in Standard mode with an external monitor connected.</description>
-    </key>
   </schema>
 </schemalist>

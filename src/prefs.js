@@ -15,17 +15,11 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         const power = new Adw.PreferencesGroup({title: _('Power')});
         const row = new Adw.SwitchRow({
             title: _('Allow screen blanking'),
-            subtitle: _('Applies next time Caffeine turns on.'),
+            subtitle: _('Applies next time Keep Awake turns on.'),
         });
         settings.bind(Key.ALLOW_SCREEN_BLANKING, row, 'active', Gio.SettingsBindFlags.DEFAULT);
         power.add(row);
 
-        const externalMonitor = new Adw.SwitchRow({
-            title: _('Sleep on lid close with an external monitor'),
-            subtitle: _('Applies in Standard mode.'),
-        });
-        settings.bind(Key.SUSPEND_ON_DOCKED_LID_CLOSE, externalMonitor, 'active', Gio.SettingsBindFlags.DEFAULT);
-        power.add(externalMonitor);
         page.add(power);
 
         const appearance = new Adw.PreferencesGroup({title: _('Appearance')});

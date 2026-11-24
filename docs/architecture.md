@@ -9,7 +9,7 @@ icon with its other Quick Settings indicators. It is visible only when an
 inhibitor is active, the session is unlocked, and `show-panel-icon` is enabled.
 The visibility setting does not affect inhibition or timers.
 
-`src/timer.js` owns one GLib one-shot source, armed only after Caffeine acquires
+`src/timer.js` owns one GLib one-shot source, armed only after Keep Awake acquires
 its inhibitor. The preset is not persisted. The `unlock-dialog` session mode
 allows suspend-only inhibition to continue while the tile and icon are hidden.
 Any idle-only request is released on lock.
@@ -39,19 +39,6 @@ cancels pending work; connection closure completes asynchronously. Late replies
 cannot change a newer tile. If the session manager loses its bus name, the tile
 returns to unavailable without reactivating automatically.
 
-## External displays
-
-`src/displays.js` reads Mutter’s connected monitors via `GetCurrentState` and
-refreshes on `MonitorsChanged`. It uses `is-builtin` rather than guessing from
-connector names or layout. The watcher is active only while the preference is
-enabled. With an external monitor in Standard mode, `src/lid.js` acquires a
-logind lid-switch inhibitor to avoid duplicate requests. It listens for UPower
-lid transitions and requests non-interactive suspend after 200 ms. If that
-sleep cycle ends within 15 seconds and the lid is still closed, it retries once
-after 1.5 seconds. Opening the lid cancels pending work. Existing sleep
-restrictions are respected. Switching to Caffeine or disconnecting the monitor
-disarms the handler.
-
 ## GNOME 48–51 review
 
 The same code path applies to all four releases. The table links to the tagged
@@ -76,14 +63,13 @@ guides reviewed for the extension.
   remains synchronous and does not depend on removed St widget properties.
 
 GNOME Shell **51.1** was smoke-tested headless with a stand-in session manager:
-mode switching, timer expiry, preferences, and teardown. Display changes are
-also covered by a private D-Bus fixture. GNOME 48–50 were reviewed against
+toggle activation, timer expiry, preferences, and teardown. GNOME 48–50 were reviewed against
 upstream sources, not run in live sessions. Headless tests do not verify
 physical blanking or suspend.
 
 Additional references: [Quick Settings guide][quick-settings],
 [session modes][modes], [extension review guidelines][review], and
-[GNOME Session Manager D-Bus API][dbus] and [Mutter DisplayConfig][display].
+[GNOME Session Manager D-Bus API][dbus].
 
 [guide48]: https://gjs.guide/extensions/upgrading/gnome-shell-48.html
 [guide49]: https://gjs.guide/extensions/upgrading/gnome-shell-49.html
@@ -105,4 +91,3 @@ Additional references: [Quick Settings guide][quick-settings],
 [modes]: https://gjs.guide/extensions/topics/session-modes.html
 [review]: https://gjs.guide/extensions/review-guidelines/review-guidelines.html
 [dbus]: https://gnome.pages.gitlab.gnome.org/gnome-session/re04.html
-[display]: https://gitlab.gnome.org/GNOME/mutter/-/blob/main/data/dbus-interfaces/org.gnome.Mutter.DisplayConfig.xml

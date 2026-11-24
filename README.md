@@ -13,28 +13,21 @@ gnome-extensions enable keep-awake@v9eq.github.io
 
 ## Usage
 
-Click the **Keep Awake** tile to switch between **Standard** and **Caffeine**.
-The arrow opens the mode selector, timer, and settings.
-
-- **Standard** leaves power management to GNOME, with an optional override for
-  closing the lid while an external monitor is connected.
-- **Caffeine** keeps the computer and screen awake. Choose **15 minutes**,
-  **30 minutes**, **1 hour**, or **No timer**. Changing the duration restarts
-  the countdown; when it expires, the tile returns to Standard.
+Click the **Keep Awake** tile to toggle idle sleep prevention. Use the arrow
+for settings or to choose **15 minutes**, **30 minutes**, **1 hour**, or
+**No timer**. Changing the duration while active restarts the countdown. When
+the timer expires, Keep Awake turns off.
 
 ## Settings
 
 | Setting | Effect |
 | --- | --- |
-| **Allow screen blanking** | Let the screen dim, lock, and blank while Caffeine prevents automatic suspend. Applies the next time Caffeine starts. |
-| **Sleep on lid close with an external monitor** | In Standard mode, suspend on lid close with an external monitor connected. On a quick wake, retry once if the lid is still closed. Off by default. |
-| **Show panel icon** | Show the coffee cup while Caffeine is active. |
+| **Allow screen blanking** | Let the screen dim, lock, and blank while Keep Awake prevents automatic suspend. Applies the next time Keep Awake starts. |
+| **Show panel icon** | Show the coffee cup while Keep Awake is active. |
 
-With screen blanking allowed, Caffeine continues through screen lock. Otherwise,
-locking ends Caffeine. Suspend inhibition may also affect manual sleep,
-depending on system policy. The lid option does not change idle timeouts and
-requires UPower and systemd-logind. Stop any separate lid-handling service before
-using it.
+With screen blanking allowed, Keep Awake continues through screen lock.
+Otherwise, locking turns it off. Suspend inhibition may also affect manual
+sleep, depending on system policy.
 
 ## Removal
 

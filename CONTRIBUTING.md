@@ -18,7 +18,6 @@ unzip -t dist/keep-awake@v9eq.github.io.shell-extension.zip
 git diff --check
 ```
 
-The automated checks run with private buses and do not suspend the machine.
-For changes to display handling, also test on hardware: compare
-`gnome-session-inhibit --list` before and after hotplug, and verify cleanup on
-extension disable. Check real suspend separately after saving your work.
+The D-Bus and Shell checks use private buses and do not suspend the machine.
+For a live check, use `gnome-session-inhibit --list` to verify that toggling
+Keep Awake off or disabling the extension releases its request.

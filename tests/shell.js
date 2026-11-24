@@ -51,13 +51,11 @@ export async function run() {
         assert(tile.toggleMode && !tile.checked && !icon.visible, 'Wrong default UI state');
         assert(tile.gicon.equal(icon.gicon) && icon.gicon.get_file().query_exists(null), 'Missing shared SVG');
         await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
-        const modes = [...extension._modeItems.values()];
-        assert(modes.map(item => item.label.text).join(',') ===
-            'Standard,Caffeine', 'Missing power modes');
-        assert([...extension._timerItems.values()].map(({label}) => label).join(',') === 'No timer,15 minutes,30 minutes,1 hour',
-            'Missing timer presets');
+        const labels = tile.menu._getMenuItems().map(item => item.label?.text).filter(Boolean);
+        assert(labels.join(',') === 'No timer,15 minutes,30 minutes,1 hour,Keep Awake Settings',
+            'The submenu should only contain timer presets and settings');
+        assert(tile.subtitle === null, 'There should be no default mode label');
         extension._timerItems.get(900).item.activate(null);
-        assert(tile.subtitle === 'Standard', 'Wrong initial power mode');
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
         assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
@@ -118,33 +116,6 @@ export async function run() {
             await waitFor(() => findTile()?.reactive, 'tile recreation after repeated enable');
             assert(overlay.get_n_children() === menuCount, 'Submenus accumulated after re-enable');
         }
-        let lidArmed = false;
-        extension._lid.start = () => { lidArmed = true; };
-        extension._lid.stop = () => { lidArmed = false; };
-        const lidKey = 'suspend-on-docked-lid-close';
-        assert(!settings.get_boolean(lidKey), 'Docked lid suspend should be opt-in');
-        settings.set_boolean(lidKey, true);
-        await waitFor(() => extension._displayWatcher && !extension._displayWatcher._request, 'display state ready');
-        const connectDisplay = connected => {
-            extension._displayWatcher.connected = connected;
-            extension._syncLidPolicy();
-        };
-        connectDisplay(false);
-        assert(!lidArmed, 'Lid policy must leave undocked behavior alone');
-        connectDisplay(true);
-        assert(lidArmed && !findTile().checked && requests.length === 5,
-            'Docked lid policy must not switch modes or inhibit suspend');
-        extension._modeItems.get('caffeine').activate(null);
-        await waitFor(() => findTile().checked && requests.length === 6, 'Caffeine mode');
-        assert(!lidArmed, 'Caffeine must disarm docked lid suspend');
-        extension._modeItems.get('standard').activate(null);
-        await waitFor(() => lidArmed && requests[5].closed, 'Standard restored docked lid suspend');
-        connectDisplay(false);
-        assert(!lidArmed, 'Disconnect must disarm docked lid suspend');
-        connectDisplay(true);
-        assert(lidArmed, 'Reconnect must rearm docked lid suspend');
-        settings.set_boolean(lidKey, false);
-        await waitFor(() => !extension._displayWatcher && !lidArmed, 'disabling docked lid suspend');
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)
