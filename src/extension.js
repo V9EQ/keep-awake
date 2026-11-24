@@ -103,9 +103,9 @@ export default class KeepAwakeExtension extends Extension {
         const menu = this._toggle.menu;
         menu.setHeader('preferences-system-symbolic', _('Power mode'));
         for (const [mode, label] of [
-            [Mode.AWAKE, _('Prevent idle sleep')],
-            [Mode.DEFAULT, _('Use GNOME defaults')],
-            [Mode.LID, _('Sleep on lid close')],
+            [Mode.AWAKE, _('Keep Awake')],
+            [Mode.DEFAULT, _('GNOME defaults')],
+            [Mode.LID, _('Lid sleep')],
         ]) {
             const item = menu.addAction(label, () => this._selectMode(mode));
             this._modeItems.set(mode, item);

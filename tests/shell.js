@@ -53,11 +53,11 @@ export async function run() {
         await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
         const modes = [...extension._modeItems.values()];
         assert(modes.map(item => item.label.text).join(',') ===
-            'Prevent idle sleep,Use GNOME defaults,Sleep on lid close', 'Missing power modes');
+            'Keep Awake,GNOME defaults,Lid sleep', 'Missing power modes');
         assert([...extension._timerItems.values()].map(({label}) => label).join(',') === 'No timer,15 minutes,30 minutes,1 hour',
             'Missing timer presets');
         extension._timerItems.get(900).item.activate(null);
-        assert(tile.subtitle === 'Use GNOME defaults', 'Wrong initial power mode');
+        assert(tile.subtitle === 'GNOME defaults', 'Wrong initial power mode');
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
         assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
