@@ -44,12 +44,17 @@ export class SessionInhibitor {
         switch (this._state) {
         case State.OFF:
         case State.ERROR:
-            this._start(allowScreenBlanking ? INHIBIT_SUSPEND : INHIBIT_IDLE);
+            this.activate(allowScreenBlanking);
             break;
         case State.ON:
             this.deactivate();
             break;
         }
+    }
+
+    activate(allowScreenBlanking = false) {
+        if (this._state === State.OFF || this._state === State.ERROR)
+            this._start(allowScreenBlanking ? INHIBIT_SUSPEND : INHIBIT_IDLE);
     }
 
     deactivate() {

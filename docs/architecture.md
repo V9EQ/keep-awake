@@ -9,17 +9,10 @@ icon with its other Quick Settings indicators. It is visible only when an
 inhibitor is active, the session is unlocked, and `show-panel-icon` is enabled.
 The visibility setting does not affect inhibition or timers.
 
-The tile submenu selects one of three mutually exclusive power modes and shows
-the Keep Awake timer presets. `src/timer.js` owns one GLib
-one-shot source, armed after successful activation and removed when Keep Awake
-turns off or the extension is disabled. It measures time while the system is
-awake. Presets are kept for as long as the extension is enabled.
-
-The extension declares `user` and `unlock-dialog` session modes so lid handling,
-suspend-only inhibition, and its timer can continue when GNOME locks the display. In the
-locked mode the extension hides the tile, submenu, and panel icon and does not
-accept clicks. Any idle-only request is released on lock. If Shell disables the
-extension in any mode, every inhibitor is released.
+`src/timer.js` owns one GLib one-shot source, armed only after Caffeine acquires
+its inhibitor. The preset is not persisted. The `unlock-dialog` session mode
+allows suspend-only inhibition to continue while the tile and icon are hidden.
+Any idle-only request is released on lock.
 
 ## Session inhibition
 
@@ -44,20 +37,16 @@ can release it without waiting for a cookie. Even a request that timed out after
 reaching the server is released. `disable()` synchronously detaches the UI and
 cancels pending work; connection closure completes asynchronously. Late replies
 cannot change a newer tile. If the session manager loses its bus name, the tile
-returns to unavailable and does not reactivate automatically.
+returns to unavailable. Only the external-display policy reactivates when the
+service returns.
 
-## Lid handling
+## External displays
 
-GNOME default leaves lid handling to GNOME Settings Daemon and logind. GNOME
-Settings Daemon already takes a `handle-lid-switch` inhibitor for external
-monitors; changing `HandleLidSwitchDocked` does not override it. The optional
-lid mode instead acquires its own low-level inhibitor and makes a regular
-non-interactive `Suspend(false)` call after a debounced UPower lid-close event.
-This does not remove GNOME’s inhibitor or override other sleep restrictions.
-The mode starts only if logind reports that suspend is available. Failure or
-service loss releases the inhibitor and shows an error; reselect the mode to
-retry. The mode only operates while the extension is loaded, and never requests
-sleep merely because the lid is already closed at startup or after resume.
+`src/displays.js` reads Mutter’s connected monitors via `GetCurrentState` and
+refreshes on `MonitorsChanged`. It uses `is-builtin` rather than guessing from
+connector names or layout. The watcher is active only while the preference is
+enabled. Standard uses a separate `SUSPEND` request for an external display;
+Caffeine takes precedence and is the only mode affected by the timer.
 
 ## GNOME 48–51 review
 
@@ -83,15 +72,14 @@ guides reviewed for the extension.
   remains synchronous and does not depend on removed St widget properties.
 
 GNOME Shell **51.1** was smoke-tested headless with a stand-in session manager:
-registration, toggle on/off, lock-mode transitions, timer expiry, icon
-preferences, and disable/re-enable. GNOME 48–50 were reviewed against upstream sources, not run in
-live sessions. The headless check does not verify physical display blanking or
-suspend.
+mode switching, timer expiry, preferences, and teardown. Display changes are
+also covered by a private D-Bus fixture. GNOME 48–50 were reviewed against
+upstream sources, not run in live sessions. Headless tests do not verify
+physical blanking or suspend.
 
 Additional references: [Quick Settings guide][quick-settings],
 [session modes][modes], [extension review guidelines][review], and
-[GNOME Session Manager D-Bus API][dbus], [logind D-Bus API][logind], and
-[UPower D-Bus API][upower].
+[GNOME Session Manager D-Bus API][dbus] and [Mutter DisplayConfig][display].
 
 [guide48]: https://gjs.guide/extensions/upgrading/gnome-shell-48.html
 [guide49]: https://gjs.guide/extensions/upgrading/gnome-shell-49.html
@@ -113,5 +101,4 @@ Additional references: [Quick Settings guide][quick-settings],
 [modes]: https://gjs.guide/extensions/topics/session-modes.html
 [review]: https://gjs.guide/extensions/review-guidelines/review-guidelines.html
 [dbus]: https://gnome.pages.gitlab.gnome.org/gnome-session/re04.html
-[logind]: https://www.freedesktop.org/software/systemd/man/latest/org.freedesktop.login1.html
-[upower]: https://upower.freedesktop.org/docs/UPower.html
+[display]: https://gitlab.gnome.org/GNOME/mutter/-/blob/main/data/dbus-interfaces/org.gnome.Mutter.DisplayConfig.xml

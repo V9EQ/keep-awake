@@ -12,10 +12,10 @@
       <summary>Show panel icon</summary>
       <description>Show the Keep Awake icon in the top panel when the mode is active.</description>
     </key>
-    <key name="suspend-on-lid-close" type="b">
+    <key name="prevent-external-sleep" type="b">
       <default>false</default>
-      <summary>Lid sleep</summary>
-      <description>Request suspend on lid close instead of leaving lid behavior to GNOME.</description>
+      <summary>Prevent sleep with an external monitor</summary>
+      <description>Prevent automatic suspend in Standard mode while an external monitor is connected.</description>
     </key>
   </schema>
 </schemalist>

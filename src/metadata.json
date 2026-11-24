@@ -1,7 +1,7 @@
 {
     "uuid": "keep-awake@v9eq.github.io",
     "name": "Keep Awake",
-    "description": "Prevent idle sleep, use GNOME defaults, or sleep on lid close from Quick Settings.",
+    "description": "Prevent idle sleep from Quick Settings or automatically with an external monitor.",
     "shell-version": ["48", "49", "50", "51"],
     "session-modes": ["user", "unlock-dialog"],
     "gettext-domain": "keep-awake@v9eq.github.io",

@@ -20,7 +20,7 @@ export async function run() {
     const service = Gio.DBusExportedObject.wrapJSObject(xml, {
         InhibitAsync([app, xid, reason, flags], invocation) {
             assert(app === UUID && xid === 0 && reason, 'Wrong Inhibit payload');
-            const request = {flags, closed: false};
+            const request = {flags, reason, closed: false};
             requests.push(request);
             request.watchId = Gio.bus_watch_name_on_connection(Gio.DBus.session, invocation.get_sender(),
                 Gio.BusNameWatcherFlags.NONE, null, () => {
@@ -53,11 +53,11 @@ export async function run() {
         await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
         const modes = [...extension._modeItems.values()];
         assert(modes.map(item => item.label.text).join(',') ===
-            'Keep Awake,GNOME defaults,Lid sleep', 'Missing power modes');
+            'Standard,Caffeine', 'Missing power modes');
         assert([...extension._timerItems.values()].map(({label}) => label).join(',') === 'No timer,15 minutes,30 minutes,1 hour',
             'Missing timer presets');
         extension._timerItems.get(900).item.activate(null);
-        assert(tile.subtitle === 'GNOME defaults', 'Wrong initial power mode');
+        assert(tile.subtitle === 'Standard', 'Wrong initial power mode');
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
         assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
@@ -118,14 +118,29 @@ export async function run() {
             await waitFor(() => findTile()?.reactive, 'tile recreation after repeated enable');
             assert(overlay.get_n_children() === menuCount, 'Submenus accumulated after re-enable');
         }
-        extension._modeItems.get('awake').activate(null);
-        await waitFor(() => findTile().checked && requests.length === 6, 'Keep Awake menu option');
-        extension._modeItems.get('lid').activate(null);
-        await waitFor(() => requests[5].closed && findTile().subtitle === 'Lid suspend unavailable',
-            'switching to lid mode released the Keep Awake request');
-        extension._modeItems.get('default').activate(null);
-        assert(!settings.get_boolean('suspend-on-lid-close') && !findTile().checked,
-            'GNOME defaults did not clear lid mode');
+        settings.set_boolean('prevent-external-sleep', true);
+        await waitFor(() => extension._displayWatcher && !extension._displayWatcher._request, 'display state ready');
+        const connectDisplay = connected => {
+            extension._displayWatcher.connected = connected;
+            extension._syncExternalInhibitor();
+        };
+        connectDisplay(true);
+        await waitFor(() => requests.length === 6, 'external monitor inhibitor');
+        assert(!findTile().checked && requests[5].flags === 4 && requests[5].reason === 'External monitor connected',
+            'External monitor must inhibit suspend without switching out of Standard');
+        extension._modeItems.get('caffeine').activate(null);
+        await waitFor(() => findTile().checked && requests.length === 7 && requests[5].closed,
+            'Caffeine replaced the external monitor inhibitor');
+        extension._modeItems.get('standard').activate(null);
+        await waitFor(() => !findTile().checked && requests.length === 8 && requests[6].closed,
+            'Standard restored the external monitor inhibitor');
+        connectDisplay(false);
+        await waitFor(() => requests[7].closed, 'monitor disconnect released the inhibitor');
+        connectDisplay(true);
+        await waitFor(() => requests.length === 9, 'monitor reconnection restored the inhibitor');
+        settings.set_boolean('prevent-external-sleep', false);
+        await waitFor(() => !extension._displayWatcher && requests[8].closed,
+            'switching off the preference released the inhibitor');
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)
