@@ -21,10 +21,10 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         power.add(row);
 
         const externalMonitor = new Adw.SwitchRow({
-            title: _('Prevent sleep with an external monitor'),
-            subtitle: _('Applies in Standard mode. The screen can still blank.'),
+            title: _('Sleep on lid close with an external monitor'),
+            subtitle: _('Applies in Standard mode.'),
         });
-        settings.bind(Key.PREVENT_EXTERNAL_SLEEP, externalMonitor, 'active', Gio.SettingsBindFlags.DEFAULT);
+        settings.bind(Key.SUSPEND_ON_DOCKED_LID_CLOSE, externalMonitor, 'active', Gio.SettingsBindFlags.DEFAULT);
         power.add(externalMonitor);
         page.add(power);
 

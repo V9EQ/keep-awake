@@ -37,16 +37,19 @@ can release it without waiting for a cookie. Even a request that timed out after
 reaching the server is released. `disable()` synchronously detaches the UI and
 cancels pending work; connection closure completes asynchronously. Late replies
 cannot change a newer tile. If the session manager loses its bus name, the tile
-returns to unavailable. Only the external-display policy reactivates when the
-service returns.
+returns to unavailable without reactivating automatically.
 
 ## External displays
 
 `src/displays.js` reads Mutter’s connected monitors via `GetCurrentState` and
 refreshes on `MonitorsChanged`. It uses `is-builtin` rather than guessing from
 connector names or layout. The watcher is active only while the preference is
-enabled. Standard uses a separate `SUSPEND` request for an external display;
-Caffeine takes precedence and is the only mode affected by the timer.
+enabled. With an external monitor in Standard mode, `src/lid.js` acquires a
+logind lid-switch inhibitor to avoid duplicate requests. It listens for UPower
+lid transitions and requests non-interactive suspend after a two-second delay.
+No request is made for an already-closed lid, and existing sleep restrictions
+are respected. Switching to Caffeine or disconnecting the monitor disarms the
+handler.
 
 ## GNOME 48–51 review
 

@@ -17,6 +17,7 @@ test: check
 	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/inhibitor.js
 	timeout 15s gjs -m tests/timer.js
 	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/displays.js
+	GIO_USE_VFS=local timeout 25s dbus-run-session -- sh -c 'DBUS_SYSTEM_BUS_ADDRESS="$$DBUS_SESSION_BUS_ADDRESS" exec gjs -m tests/lid.js'
 
 test-shell: pack
 	sh tests/shell.sh "$(abspath $(BUNDLE))" "$(CURDIR)/tests/shell.js"

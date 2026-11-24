@@ -16,8 +16,8 @@ gnome-extensions enable keep-awake@v9eq.github.io
 Click the **Keep Awake** tile to switch between **Standard** and **Caffeine**.
 The arrow opens the mode selector, timer, and settings.
 
-- **Standard** leaves power management to GNOME unless you enable the external
-  monitor setting below.
+- **Standard** leaves power management to GNOME, with an optional override for
+  closing the lid while an external monitor is connected.
 - **Caffeine** keeps the computer and screen awake. Choose **15 minutes**,
   **30 minutes**, **1 hour**, or **No timer**. Changing the duration restarts
   the countdown; when it expires, the tile returns to Standard.
@@ -27,13 +27,14 @@ The arrow opens the mode selector, timer, and settings.
 | Setting | Effect |
 | --- | --- |
 | **Allow screen blanking** | Let the screen dim, lock, and blank while Caffeine prevents automatic suspend. Applies the next time Caffeine starts. |
-| **Prevent sleep with an external monitor** | In Standard mode, prevent automatic suspend while an external monitor is connected. Applies immediately; the screen can still blank. |
+| **Sleep on lid close with an external monitor** | In Standard mode, suspend after the lid stays closed for two seconds with an external monitor connected. Off by default. |
 | **Show panel icon** | Show the coffee cup while Caffeine is active. |
 
 With screen blanking allowed, Caffeine continues through screen lock. Otherwise,
 locking ends Caffeine. Suspend inhibition may also affect manual sleep,
-depending on the system policy. The extension does not change lid behavior or
-manage separate lid-handling services.
+depending on system policy. The lid option does not change idle timeouts and
+requires UPower and systemd-logind. Stop any separate lid-handling service before
+using it.
 
 ## Removal
 

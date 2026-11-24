@@ -20,7 +20,7 @@ export async function run() {
     const service = Gio.DBusExportedObject.wrapJSObject(xml, {
         InhibitAsync([app, xid, reason, flags], invocation) {
             assert(app === UUID && xid === 0 && reason, 'Wrong Inhibit payload');
-            const request = {flags, reason, closed: false};
+            const request = {flags, closed: false};
             requests.push(request);
             request.watchId = Gio.bus_watch_name_on_connection(Gio.DBus.session, invocation.get_sender(),
                 Gio.BusNameWatcherFlags.NONE, null, () => {
@@ -118,29 +118,33 @@ export async function run() {
             await waitFor(() => findTile()?.reactive, 'tile recreation after repeated enable');
             assert(overlay.get_n_children() === menuCount, 'Submenus accumulated after re-enable');
         }
-        settings.set_boolean('prevent-external-sleep', true);
+        let lidArmed = false;
+        extension._lid.start = () => { lidArmed = true; };
+        extension._lid.stop = () => { lidArmed = false; };
+        const lidKey = 'suspend-on-docked-lid-close';
+        assert(!settings.get_boolean(lidKey), 'Docked lid suspend should be opt-in');
+        settings.set_boolean(lidKey, true);
         await waitFor(() => extension._displayWatcher && !extension._displayWatcher._request, 'display state ready');
         const connectDisplay = connected => {
             extension._displayWatcher.connected = connected;
-            extension._syncExternalInhibitor();
+            extension._syncLidPolicy();
         };
-        connectDisplay(true);
-        await waitFor(() => requests.length === 6, 'external monitor inhibitor');
-        assert(!findTile().checked && requests[5].flags === 4 && requests[5].reason === 'External monitor connected',
-            'External monitor must inhibit suspend without switching out of Standard');
-        extension._modeItems.get('caffeine').activate(null);
-        await waitFor(() => findTile().checked && requests.length === 7 && requests[5].closed,
-            'Caffeine replaced the external monitor inhibitor');
-        extension._modeItems.get('standard').activate(null);
-        await waitFor(() => !findTile().checked && requests.length === 8 && requests[6].closed,
-            'Standard restored the external monitor inhibitor');
         connectDisplay(false);
-        await waitFor(() => requests[7].closed, 'monitor disconnect released the inhibitor');
+        assert(!lidArmed, 'Lid policy must leave undocked behavior alone');
         connectDisplay(true);
-        await waitFor(() => requests.length === 9, 'monitor reconnection restored the inhibitor');
-        settings.set_boolean('prevent-external-sleep', false);
-        await waitFor(() => !extension._displayWatcher && requests[8].closed,
-            'switching off the preference released the inhibitor');
+        assert(lidArmed && !findTile().checked && requests.length === 5,
+            'Docked lid policy must not switch modes or inhibit suspend');
+        extension._modeItems.get('caffeine').activate(null);
+        await waitFor(() => findTile().checked && requests.length === 6, 'Caffeine mode');
+        assert(!lidArmed, 'Caffeine must disarm docked lid suspend');
+        extension._modeItems.get('standard').activate(null);
+        await waitFor(() => lidArmed && requests[5].closed, 'Standard restored docked lid suspend');
+        connectDisplay(false);
+        assert(!lidArmed, 'Disconnect must disarm docked lid suspend');
+        connectDisplay(true);
+        assert(lidArmed, 'Reconnect must rearm docked lid suspend');
+        settings.set_boolean(lidKey, false);
+        await waitFor(() => !extension._displayWatcher && !lidArmed, 'disabling docked lid suspend');
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)

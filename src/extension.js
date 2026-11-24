@@ -9,6 +9,7 @@ import {QuickMenuToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/q
 
 import {ExternalDisplayWatcher} from './displays.js';
 import {SessionInhibitor, State} from './inhibitor.js';
+import {LidState, LidSuspend} from './lid.js';
 import {Key} from './settings.js';
 import {AwakeTimer} from './timer.js';
 
@@ -40,15 +41,17 @@ export default class KeepAwakeExtension extends Extension {
         this._preferencesItem = this._toggle.menu.addAction(_('Keep Awake Settings'), () => this.openPreferences());
         this._inhibitor = new SessionInhibitor(this.uuid, _('Keep the session awake'), state => {
             this._updateTimer();
-            this._syncExternalInhibitor();
+            this._syncLidPolicy();
             this._updateToggle(state);
         }, this.getLogger());
+        this._lid = new LidSuspend(title, _('Sleep on lid close with an external monitor'),
+            () => this._updateToggle(this._inhibitor.state), this.getLogger());
         this._toggle.connect('clicked', () => {
             this._selectMode(this._selectedMode() === Mode.STANDARD ? Mode.CAFFEINE : Mode.STANDARD);
             this._updateToggle(this._inhibitor.state);
         });
         this._settingsId = this._settings.connect('changed', (_settings, key) => {
-            if (key === Key.PREVENT_EXTERNAL_SLEEP)
+            if (key === Key.SUSPEND_ON_DOCKED_LID_CLOSE)
                 this._syncDisplayWatcher();
             else if (key === Key.SHOW_PANEL_ICON)
                 this._updateToggle(this._inhibitor.state);
@@ -69,7 +72,7 @@ export default class KeepAwakeExtension extends Extension {
         this._timer?.cancel();
         this._inhibitor?.destroy();
         this._displayWatcher?.destroy();
-        this._externalInhibitor?.destroy();
+        this._lid?.destroy();
         // Shell parents the submenu separately from the tile.
         this._toggle?.menu.destroy();
         this._toggle?.destroy();
@@ -82,7 +85,7 @@ export default class KeepAwakeExtension extends Extension {
         this._timerItems = null;
         this._modeItems = null;
         this._displayWatcher = null;
-        this._externalInhibitor = null;
+        this._lid = null;
         this._preferencesItem = null;
         this._settings = null;
     }
@@ -128,30 +131,20 @@ export default class KeepAwakeExtension extends Extension {
     }
 
     _syncDisplayWatcher() {
-        if (this._settings.get_boolean(Key.PREVENT_EXTERNAL_SLEEP)) {
-            if (this._displayWatcher)
-                return;
-
-            const logger = this.getLogger();
-            this._externalInhibitor = new SessionInhibitor(this.uuid, _('External monitor connected'),
-                state => {
-                    if (state === State.OFF)
-                        this._syncExternalInhibitor();
-                }, logger);
-            this._displayWatcher = new ExternalDisplayWatcher(() => this._syncExternalInhibitor(), logger);
+        if (this._settings.get_boolean(Key.SUSPEND_ON_DOCKED_LID_CLOSE)) {
+            this._displayWatcher ??= new ExternalDisplayWatcher(() => this._syncLidPolicy(), this.getLogger());
         } else {
             this._displayWatcher?.destroy();
-            this._externalInhibitor?.destroy();
             this._displayWatcher = null;
-            this._externalInhibitor = null;
         }
+        this._syncLidPolicy();
     }
 
-    _syncExternalInhibitor() {
+    _syncLidPolicy() {
         if (this._displayWatcher?.connected && this._selectedMode() === Mode.STANDARD)
-            this._externalInhibitor.activate(true);
+            this._lid?.start();
         else
-            this._externalInhibitor?.deactivate();
+            this._lid?.stop();
     }
 
     _addTimerItems() {
@@ -203,6 +196,9 @@ export default class KeepAwakeExtension extends Extension {
         const timerLabel = mode === Mode.CAFFEINE && this._duration
             ? this._timerItems.get(this._duration).label
             : null;
-        this._toggle.subtitle = subtitles[state] ?? timerLabel ?? this._modeItems.get(mode).label.text;
+        const lidError = mode === Mode.STANDARD && this._lid.state === LidState.ERROR
+            ? _('Lid sleep unavailable')
+            : null;
+        this._toggle.subtitle = lidError ?? subtitles[state] ?? timerLabel ?? this._modeItems.get(mode).label.text;
     }
 }
