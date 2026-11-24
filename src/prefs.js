@@ -5,6 +5,8 @@ import Gio from 'gi://Gio';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+import {Key} from './settings.js';
+
 export default class KeepAwakePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const _ = this.gettext.bind(this);
@@ -15,7 +17,7 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
             title: _('Allow screen blanking'),
             subtitle: _('Applies next time Keep Awake turns on.'),
         });
-        settings.bind('allow-screen-blanking', row, 'active', Gio.SettingsBindFlags.DEFAULT);
+        settings.bind(Key.ALLOW_SCREEN_BLANKING, row, 'active', Gio.SettingsBindFlags.DEFAULT);
         power.add(row);
         page.add(power);
 
@@ -23,7 +25,7 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         const panelIcon = new Adw.SwitchRow({
             title: _('Show panel icon'),
         });
-        settings.bind('show-panel-icon', panelIcon, 'active', Gio.SettingsBindFlags.DEFAULT);
+        settings.bind(Key.SHOW_PANEL_ICON, panelIcon, 'active', Gio.SettingsBindFlags.DEFAULT);
         appearance.add(panelIcon);
         page.add(appearance);
         window.add(page);

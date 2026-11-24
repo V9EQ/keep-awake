@@ -5,24 +5,11 @@ import GLib from 'gi://GLib';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
-import {sleep} from 'resource:///org/gnome/shell/ui/scripting.js';
+
+import {assert, waitFor} from './helpers.js';
 
 const UUID = 'keep-awake@v9eq.github.io';
 const NAME = 'org.gnome.SessionManager';
-
-function assert(condition, message) {
-    if (!condition)
-        throw new Error(message);
-}
-
-async function waitFor(predicate, description) {
-    for (let i = 0; i < 100; i++) {
-        if (predicate())
-            return;
-        await sleep(50);
-    }
-    throw new Error(`Timed out: ${description}`);
-}
 
 export async function run() {
     const xml = `<node><interface name="${NAME}"><method name="Inhibit">

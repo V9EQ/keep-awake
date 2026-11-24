@@ -1,6 +1,7 @@
 UUID := keep-awake@v9eq.github.io
 SCHEMA := org.gnome.shell.extensions.keep-awake.gschema.xml
 STAGE := $(CURDIR)/.build/extension
+MODULES := $(filter-out extension.js prefs.js,$(notdir $(wildcard src/*.js)))
 BUNDLE := dist/$(UUID).shell-extension.zip
 
 .PHONY: all check test test-shell pack install clean
@@ -13,12 +14,12 @@ check:
 	glib-compile-schemas --strict --dry-run schemas
 
 test: check
-	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/sessionInhibitor.js
-	timeout 15s gjs -m tests/awakeTimer.js
-	GIO_USE_VFS=local timeout 25s dbus-run-session -- sh -c 'DBUS_SYSTEM_BUS_ADDRESS="$$DBUS_SESSION_BUS_ADDRESS" exec gjs -m tests/lidSuspend.js'
+	GIO_USE_VFS=local timeout 20s dbus-run-session -- gjs -m tests/inhibitor.js
+	timeout 15s gjs -m tests/timer.js
+	GIO_USE_VFS=local timeout 25s dbus-run-session -- sh -c 'DBUS_SYSTEM_BUS_ADDRESS="$$DBUS_SESSION_BUS_ADDRESS" exec gjs -m tests/lid.js'
 
 test-shell: pack
-	sh tests/run-shell-smoke.sh "$(abspath $(BUNDLE))" "$(CURDIR)/tests/shellSmoke.js"
+	sh tests/shell.sh "$(abspath $(BUNDLE))" "$(CURDIR)/tests/shell.js"
 
 pack: check
 	rm -rf "$(STAGE)"
@@ -27,7 +28,7 @@ pack: check
 	cp -R icons "$(STAGE)/"
 	cp "schemas/$(SCHEMA)" "$(STAGE)/schemas/"
 	gnome-extensions pack --force --out-dir=dist --schema="schemas/$(SCHEMA)" \
-		--extra-source=awakeTimer.js --extra-source=lidSuspend.js --extra-source=sessionInhibitor.js \
+		$(addprefix --extra-source=,$(MODULES)) \
 		--extra-source=icons --extra-source=LICENSE "$(STAGE)"
 
 install: pack

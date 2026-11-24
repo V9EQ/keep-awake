@@ -10,7 +10,7 @@ inhibitor is active, the session is unlocked, and `show-panel-icon` is enabled.
 The visibility setting does not affect inhibition or timers.
 
 The tile submenu selects one of three mutually exclusive power modes and shows
-the Keep Awake timer presets. `src/awakeTimer.js` owns one GLib
+the Keep Awake timer presets. `src/timer.js` owns one GLib
 one-shot source, armed after successful activation and removed when Keep Awake
 turns off or the extension is disabled. It measures time while the system is
 awake. Presets are kept for as long as the extension is enabled.
@@ -23,7 +23,7 @@ extension in any mode, every inhibitor is released.
 
 ## Session inhibition
 
-`src/sessionInhibitor.js` calls `org.gnome.SessionManager.Inhibit` on the user
+`src/inhibitor.js` calls `org.gnome.SessionManager.Inhibit` on the user
 session bus. It requests exactly one flag for each activation:
 
 - **Keep the display on:** `IDLE` (`8`) prevents the session from becoming idle.

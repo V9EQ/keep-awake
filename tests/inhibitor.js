@@ -3,7 +3,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import {SessionInhibitor, State} from '../src/sessionInhibitor.js';
+import {SessionInhibitor, State} from '../src/inhibitor.js';
+import {assert, waitFor} from './helpers.js';
 
 const NAME = 'org.gnome.SessionManager';
 const APP = 'keep-awake@test';
@@ -34,24 +35,6 @@ const service = Gio.DBusExportedObject.wrapJSObject(xml, {
             });
     },
 });
-
-function assert(condition, message) {
-    if (!condition)
-        throw new Error(message);
-}
-
-async function waitFor(predicate, message) {
-    const deadline = GLib.get_monotonic_time() + 7 * GLib.USEC_PER_SEC;
-    while (!predicate()) {
-        assert(GLib.get_monotonic_time() < deadline, message);
-        await new Promise(resolve => {
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 10, () => {
-                resolve();
-                return GLib.SOURCE_REMOVE;
-            });
-        });
-    }
-}
 
 function waitForState(state) {
     return waitFor(() => controller.state === state, `Expected state: ${state}`);

@@ -3,7 +3,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import {LidState, LidSuspend} from '../src/lidSuspend.js';
+import {LidState, LidSuspend} from '../src/lid.js';
+import {assert, sleep, waitFor} from './helpers.js';
 
 const LOGIN = 'org.freedesktop.login1';
 const LOGIN_IFACE = `${LOGIN}.Manager`;
@@ -15,27 +16,6 @@ let preparing = false;
 let denied = false;
 let requests = 0;
 const warnings = [];
-
-function assert(condition, message) {
-    if (!condition)
-        throw new Error(message);
-}
-
-function sleep(ms) {
-    return new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-        resolve();
-        return GLib.SOURCE_REMOVE;
-    }));
-}
-
-async function waitFor(condition, message) {
-    for (let i = 0; i < 160; i++) {
-        if (condition())
-            return;
-        await sleep(25);
-    }
-    throw new Error(message);
-}
 
 function descriptorCount() {
     const dir = Gio.File.new_for_path('/proc/self/fd').enumerate_children(
