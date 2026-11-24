@@ -52,12 +52,12 @@ export async function run() {
         assert(tile.gicon.equal(icon.gicon) && icon.gicon.get_file().query_exists(null), 'Missing shared SVG');
         await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
         const modes = [...extension._modeItems.values()];
-        assert(modes.map(item => item.label.text).join(',') === 'Keep Awake,GNOME default,Suspend on lid close',
-            'Missing power modes');
+        assert(modes.map(item => item.label.text).join(',') ===
+            'Prevent idle sleep,Use GNOME defaults,Sleep on lid close', 'Missing power modes');
         assert([...extension._timerItems.values()].map(({label}) => label).join(',') === 'No timer,15 minutes,30 minutes,1 hour',
             'Missing timer presets');
         extension._timerItems.get(900).item.activate(null);
-        assert(tile.subtitle === 'GNOME default', 'Wrong initial power mode');
+        assert(tile.subtitle === 'Use GNOME defaults', 'Wrong initial power mode');
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
         assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
@@ -125,7 +125,7 @@ export async function run() {
             'switching to lid mode released the Keep Awake request');
         extension._modeItems.get('default').activate(null);
         assert(!settings.get_boolean('suspend-on-lid-close') && !findTile().checked,
-            'GNOME default did not clear lid mode');
+            'GNOME defaults did not clear lid mode');
         print('Keep Awake Quick Settings smoke check passed');
     } finally {
         if (Main.sessionMode.isLocked)

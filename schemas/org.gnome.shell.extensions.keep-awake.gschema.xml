@@ -14,7 +14,7 @@
     </key>
     <key name="suspend-on-lid-close" type="b">
       <default>false</default>
-      <summary>Suspend on lid close</summary>
+      <summary>Sleep on lid close</summary>
       <description>Request suspend on lid close instead of leaving lid behavior to GNOME.</description>
     </key>
   </schema>

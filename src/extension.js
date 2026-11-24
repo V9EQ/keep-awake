@@ -103,9 +103,9 @@ export default class KeepAwakeExtension extends Extension {
         const menu = this._toggle.menu;
         menu.setHeader('preferences-system-symbolic', _('Power mode'));
         for (const [mode, label] of [
-            [Mode.AWAKE, _('Keep Awake')],
-            [Mode.DEFAULT, _('GNOME default')],
-            [Mode.LID, _('Suspend on lid close')],
+            [Mode.AWAKE, _('Prevent idle sleep')],
+            [Mode.DEFAULT, _('Use GNOME defaults')],
+            [Mode.LID, _('Sleep on lid close')],
         ]) {
             const item = menu.addAction(label, () => this._selectMode(mode));
             this._modeItems.set(mode, item);
@@ -198,7 +198,7 @@ export default class KeepAwakeExtension extends Extension {
         if (lidSelected) {
             this._toggle.subtitle = {
                 [LidState.STARTING]: _('Starting lid mode…'),
-                [LidState.ON]: _('Suspend on lid close'),
+                [LidState.ON]: this._modeItems.get(mode).label.text,
                 [LidState.ERROR]: _('Lid suspend unavailable'),
             }[this._lid.state] ?? null;
             return;
@@ -209,7 +209,9 @@ export default class KeepAwakeExtension extends Extension {
             [State.STARTING]: _('Starting…'),
             [State.ERROR]: _('Could not start'),
         };
-        const timerLabel = this._duration ? this._timerItems.get(this._duration).label : null;
-        this._toggle.subtitle = subtitles[state] ?? (mode === Mode.AWAKE ? timerLabel : _('GNOME default'));
+        const timerLabel = mode === Mode.AWAKE && this._duration
+            ? this._timerItems.get(this._duration).label
+            : null;
+        this._toggle.subtitle = subtitles[state] ?? timerLabel ?? this._modeItems.get(mode).label.text;
     }
 }

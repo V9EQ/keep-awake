@@ -44,7 +44,7 @@ Verify that changing timer presets rearms or cancels the countdown and that
 changing **Show panel icon** takes effect without releasing the inhibitor.
 
 For a hardware lid check, stop other lid handlers first. With an external display
-connected, verify **GNOME default** leaves the display usable on lid close and
-**Suspend on lid close** sleeps after two seconds, including while locked.
+connected, verify **Use GNOME defaults** leaves the display usable on lid close and
+**Sleep on lid close** sleeps after two seconds, including while locked.
 Open the lid before the delay to check cancellation. Save work before testing;
 isolated D-Bus tests cannot verify hardware suspend or resume.

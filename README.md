@@ -3,7 +3,7 @@
 A GNOME Shell **48–51** extension that adds a **Keep Awake** tile to Quick Settings,
 alongside Wi-Fi and Bluetooth. Choose a power mode from the tile’s submenu
 without modifying system settings. An optional coffee cup shows when the
-**Keep Awake** mode is active.
+**Prevent idle sleep** mode is active.
 
 ## Installation
 
@@ -22,13 +22,13 @@ Open Quick Settings from the top-right of the panel and use the arrow on the
 
 | Mode | Behavior |
 | --- | --- |
-| **Keep Awake** | Prevent automatic suspend due to inactivity. Keep the display on or let it blank at GNOME’s normal timeout. Optionally stop this mode with a timer. |
-| **GNOME default** | Leave screen, sleep, and lid behavior to GNOME. Normally it keeps the laptop awake when an external display is connected and the lid is closed. |
-| **Suspend on lid close** | Request suspend when the lid stays closed for two seconds, even with an external display. Normal idle timeouts still apply. |
+| **Prevent idle sleep** | Prevent automatic suspend due to inactivity. Keep the display on or let it blank at GNOME’s normal timeout. Optionally stop this mode with a timer. |
+| **Use GNOME defaults** | Leave screen, sleep, and lid behavior to GNOME. Normally it keeps the laptop awake when an external display is connected and the lid is closed. |
+| **Sleep on lid close** | Request suspend when the lid stays closed for two seconds, even with an external display. Normal idle timeouts still apply. |
 
-Click the main part of the tile to turn on **Keep Awake** or return to
-**GNOME default** from either custom mode. **Suspend on lid close** is remembered
-across logins; **Keep Awake** and its timer are not. The lid mode runs only
+Click the main part of the tile to turn on **Prevent idle sleep** or return to
+**Use GNOME defaults** from either custom mode. **Sleep on lid close** is remembered
+across logins; **Prevent idle sleep** and its timer are not. The lid mode runs only
 while the extension is loaded in a GNOME session (including the lock screen),
 not at the login screen. It needs UPower, systemd-logind, and permission to
 suspend without a prompt. It follows normal system sleep restrictions, does not
