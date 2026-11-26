@@ -48,22 +48,20 @@ export async function run() {
         const overlay = tile.menu.actor.get_parent();
         const menuCount = overlay.get_n_children();
         assert(indicators.contains(icon), 'Icon is not in the Quick Settings indicators');
-        assert(tile.toggleMode && !tile.checked && !icon.visible, 'Wrong default UI state');
+        assert(tile.toggleMode, 'Keep Awake must be a toggle');
         assert(tile.gicon.equal(icon.gicon) && icon.gicon.get_file().query_exists(null), 'Missing shared SVG');
-        await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
+        await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'default automatic activation');
+        assert(requests[0].flags === 8, 'Default activation must inhibit idle only');
         const labels = tile.menu._getMenuItems().map(item => item.label?.text).filter(Boolean);
         assert(labels.join(',') === 'No timer,15 minutes,30 minutes,1 hour,Keep Awake Settings',
             'The submenu should only contain timer presets and settings');
         assert(tile.subtitle === null, 'There should be no default mode label');
         assert(!extension._lidSuspend, 'Docked lid suspend must be off by default');
         settings.set_boolean('suspend-on-docked-lid-close', true);
-        await waitFor(() => extension._lidSuspend, 'Enable the lid watcher while the tile is off');
+        await waitFor(() => extension._lidSuspend, 'Enable the lid watcher');
         const lidWatcher = extension._lidSuspend;
         extension._timerItems.get(900).item.activate(null);
-        tile.emit('clicked', 1);
-        await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'activation');
         assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
-        assert(requests[0].flags === 8, 'Default activation must inhibit idle only');
         settings.set_boolean('show-panel-icon', false);
         await waitFor(() => !icon.visible, 'hide the active icon immediately');
         assert(tile.checked && !requests[0].closed, 'Hiding the icon must not stop Keep Awake');
@@ -105,9 +103,11 @@ export async function run() {
         assert(!extension._lidSuspend && lidWatcher._cancellable.is_cancelled(), 'Disable must stop watching the lid');
         menu.close();
         settings.set_boolean('show-panel-icon', false);
+        settings.set_boolean('start-active', false);
         assert(Main.extensionManager.enableExtension(UUID), 'Could not re-enable extension');
-        await waitFor(() => findTile()?.reactive, 'tile recreation');
-        assert(!findTile().checked && requests.length === 4, 'Mode did not reset');
+        await waitFor(() => findTile()?.reactive && extension._inhibitor.state === 'off',
+            'tile recreation without autostart');
+        assert(!findTile().checked && requests.length === 4, 'Startup preference was not respected');
         const newWatcher = extension._lidSuspend;
         assert(newWatcher && newWatcher !== lidWatcher, 'Lid preference did not survive re-enable');
         settings.set_boolean('suspend-on-docked-lid-close', false);

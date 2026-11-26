@@ -2,6 +2,11 @@
 <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
 <schemalist gettext-domain="keep-awake@v9eq.github.io">
   <schema id="org.gnome.shell.extensions.keep-awake" path="/org/gnome/shell/extensions/keep-awake/">
+    <key name="start-active" type="b">
+      <default>true</default>
+      <summary>Start Keep Awake automatically</summary>
+      <description>Activate Keep Awake when the extension is enabled and the session is unlocked.</description>
+    </key>
     <key name="allow-screen-blanking" type="b">
       <default>false</default>
       <summary>Allow screen blanking</summary>
