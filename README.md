@@ -13,24 +13,17 @@ gnome-extensions enable keep-awake@v9eq.github.io
 
 ## Usage
 
-Keep Awake starts automatically when the extension is enabled, preventing
-idle screen blanking and locking by default. Click the **Keep Awake** tile to
-turn it off or on. Use the arrow for settings or to choose **15 minutes**,
-**30 minutes**, **1 hour**, or **No timer**. Changing the duration while active
-restarts the countdown. When the timer expires, Keep Awake turns off.
+Turn on the **Keep Awake** tile to prevent idle screen blanking, locking, and
+suspend. Use the arrow for settings or to choose **15 minutes**, **30 minutes**,
+**1 hour**, or **No timer**. Changing the duration restarts the countdown.
+Keep Awake starts off and turns off on screen lock or timer expiry.
 
 ## Settings
 
 | Setting | Effect |
 | --- | --- |
-| **Start Keep Awake automatically** | Start when the extension is enabled. On by default. |
-| **Allow screen blanking** | Let the screen dim, lock, and blank while Keep Awake prevents automatic suspend. Applies the next time Keep Awake starts. |
 | **Suspend on lid close with an external monitor** | Request suspend if the laptop lid closes while an external display is active. Off by default. Works with the tile off and the screen locked, as long as the extension is enabled. |
 | **Show panel icon** | Show the coffee cup while Keep Awake is active. |
-
-With screen blanking allowed, Keep Awake continues through screen lock.
-Otherwise, locking turns it off. Suspend inhibition may also affect manual
-sleep, depending on system policy.
 
 The lid option requests suspend, not shutdown. Test with the **Keep Awake**
 tile off first: system policy and sleep inhibitors still apply. The extension

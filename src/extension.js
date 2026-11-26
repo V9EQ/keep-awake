@@ -15,7 +15,6 @@ import {AwakeTimer} from './timer.js';
 export default class KeepAwakeExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
-        this._startPending = this._settings.get_boolean(Key.START_ACTIVE);
         const title = _('Keep Awake');
         const icon = new Gio.FileIcon({file: this.dir.resolve_relative_path('icons/keep-awake-symbolic.svg')});
         this._indicator = new SystemIndicator();
@@ -38,7 +37,6 @@ export default class KeepAwakeExtension extends Extension {
         this._inhibitor = new SessionInhibitor(this.uuid, _('Keep the session awake'), state => {
             this._updateTimer();
             this._updateToggle(state);
-            this._maybeStart();
         }, this.getLogger());
         this._toggle.connect('clicked', () => {
             if (!Main.sessionMode.isLocked) {
@@ -46,7 +44,7 @@ export default class KeepAwakeExtension extends Extension {
                 if (state === State.ON || state === State.STARTING)
                     this._inhibitor.deactivate();
                 else
-                    this._inhibitor.activate(this._settings.get_boolean(Key.ALLOW_SCREEN_BLANKING));
+                    this._inhibitor.activate();
             }
             this._updateToggle(this._inhibitor.state);
         });
@@ -101,23 +99,12 @@ export default class KeepAwakeExtension extends Extension {
         const {isLocked, allowSettings} = Main.sessionMode;
         if (isLocked) {
             this._toggle.menu.close();
-            if (!this._inhibitor.allowsScreenBlanking)
-                this._inhibitor.deactivate();
+            this._inhibitor.deactivate();
         }
 
         this._toggle.visible = !isLocked;
         this._preferencesItem.visible = !isLocked && allowSettings;
         this._updateToggle(this._inhibitor.state);
-        this._maybeStart();
-    }
-
-    _maybeStart() {
-        if (!this._startPending || Main.sessionMode.isLocked || this._inhibitor.state !== State.OFF)
-            return;
-
-        // Consume the startup request before activation emits another state change.
-        this._startPending = false;
-        this._inhibitor.activate(this._settings.get_boolean(Key.ALLOW_SCREEN_BLANKING));
     }
 
     _addTimerItems() {

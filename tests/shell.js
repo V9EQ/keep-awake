@@ -19,8 +19,8 @@ export async function run() {
     const requests = [];
     const service = Gio.DBusExportedObject.wrapJSObject(xml, {
         InhibitAsync([app, xid, reason, flags], invocation) {
-            assert(app === UUID && xid === 0 && reason, 'Wrong Inhibit payload');
-            const request = {flags, closed: false};
+            assert(app === UUID && xid === 0 && reason && flags === 8, 'Expected an idle inhibitor');
+            const request = {closed: false};
             requests.push(request);
             request.watchId = Gio.bus_watch_name_on_connection(Gio.DBus.session, invocation.get_sender(),
                 Gio.BusNameWatcherFlags.NONE, null, () => {
@@ -50,8 +50,8 @@ export async function run() {
         assert(indicators.contains(icon), 'Icon is not in the Quick Settings indicators');
         assert(tile.toggleMode, 'Keep Awake must be a toggle');
         assert(tile.gicon.equal(icon.gicon) && icon.gicon.get_file().query_exists(null), 'Missing shared SVG');
-        await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'default automatic activation');
-        assert(requests[0].flags === 8, 'Default activation must inhibit idle only');
+        await waitFor(() => extension._inhibitor.state === 'off', 'session manager ready');
+        assert(!tile.checked && !icon.visible && requests.length === 0, 'Keep Awake must start off');
         const labels = tile.menu._getMenuItems().map(item => item.label?.text).filter(Boolean);
         assert(labels.join(',') === 'No timer,15 minutes,30 minutes,1 hour,Keep Awake Settings',
             'The submenu should only contain timer presets and settings');
@@ -61,6 +61,8 @@ export async function run() {
         await waitFor(() => extension._lidSuspend, 'Enable the lid watcher');
         const lidWatcher = extension._lidSuspend;
         extension._timerItems.get(900).item.activate(null);
+        tile.emit('clicked', 1);
+        await waitFor(() => tile.checked && icon.visible && requests.length === 1, 'manual activation');
         assert(tile.subtitle === '15 minutes', 'Timer preset was not selected');
         settings.set_boolean('show-panel-icon', false);
         await waitFor(() => !icon.visible, 'hide the active icon immediately');
@@ -79,16 +81,10 @@ export async function run() {
         Main.sessionMode.popMode('unlock-dialog');
         assert(tile.visible && !tile.checked, 'Default policy must not reactivate after unlock');
 
-        settings.set_boolean('allow-screen-blanking', true);
         tile.emit('clicked', 1);
-        await waitFor(() => tile.checked && icon.visible && requests.length === 3, 'suspend-only activation');
-        assert(requests[2].flags === 4, 'Allow blanking must inhibit suspend only');
-        Main.sessionMode.pushMode('unlock-dialog');
-        assert(tile.checked && !tile.visible && !icon.visible && !requests[2].closed, 'Suspend-only lock policy failed');
+        await waitFor(() => tile.checked && icon.visible && requests.length === 3, 'activation before timer expiry');
         extension._timer.restart(1);
-        await waitFor(() => !tile.checked && requests[2].closed, 'timer expiry while locked');
-        Main.sessionMode.popMode('unlock-dialog');
-        assert(tile.visible && !tile.checked, 'Expired timer must not reactivate after unlock');
+        await waitFor(() => !tile.checked && !icon.visible && requests[2].closed, 'timer expiry');
 
         tile.emit('clicked', 1);
         await waitFor(() => tile.checked && requests.length === 4, 'activation before disabling');
@@ -103,11 +99,9 @@ export async function run() {
         assert(!extension._lidSuspend && lidWatcher._cancellable.is_cancelled(), 'Disable must stop watching the lid');
         menu.close();
         settings.set_boolean('show-panel-icon', false);
-        settings.set_boolean('start-active', false);
         assert(Main.extensionManager.enableExtension(UUID), 'Could not re-enable extension');
-        await waitFor(() => findTile()?.reactive && extension._inhibitor.state === 'off',
-            'tile recreation without autostart');
-        assert(!findTile().checked && requests.length === 4, 'Startup preference was not respected');
+        await waitFor(() => findTile()?.reactive && extension._inhibitor.state === 'off', 'tile recreation');
+        assert(!findTile().checked && requests.length === 4, 'Keep Awake must stay off after re-enable');
         const newWatcher = extension._lidSuspend;
         assert(newWatcher && newWatcher !== lidWatcher, 'Lid preference did not survive re-enable');
         settings.set_boolean('suspend-on-docked-lid-close', false);

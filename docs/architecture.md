@@ -10,26 +10,15 @@ inhibitor is active, the session is unlocked, and `show-panel-icon` is enabled.
 The visibility setting does not affect inhibition or timers.
 
 `src/timer.js` owns one GLib one-shot source, armed only after Keep Awake acquires
-its inhibitor. The preset is not persisted. The `unlock-dialog` session mode
-allows suspend-only inhibition to continue while the tile and icon are hidden.
-Any idle-only request is released on lock.
+its inhibitor. The preset is not persisted. Locking releases the inhibitor and
+hides the tile and icon; the optional lid watcher can keep running.
 
 ## Session inhibition
 
-`src/inhibitor.js` calls `org.gnome.SessionManager.Inhibit` on the user
-session bus. It requests exactly one flag for each activation:
-
-- **Keep the display on:** `IDLE` (`8`) prevents the session from becoming idle.
-  Shell does not start its idle fade or lock, and the GNOME Settings Daemon power
-  plugin cancels its dimming and automatic sleep timers in the unlocked session.
-- **Allow screen blanking:** `SUSPEND` (`4`) prevents the GNOME power plugin from
-  suspending due to inactivity without affecting Shell's idle fade or lock. GNOME
-  Session can also propagate this flag to logind, so the system may apply it to
-  manual sleep. This does not override external power policies.
-
-`src/prefs.js` binds the extension's `allow-screen-blanking` GSettings key to the
-preferences switch. The extension samples it when each request starts and keeps
-that policy for the life of the request.
+`src/inhibitor.js` calls `org.gnome.SessionManager.Inhibit` with `IDLE` (`8`)
+on the user session bus. This suppresses Shell's idle fade and lock and the
+GNOME power plugin's inactivity-based dimming and suspend. It does not block
+manual locking or override external power policies.
 
 Each activation owns a private bus connection. GNOME Session drops the inhibitor
 when its sender disconnects, so turning the tile off or disabling the extension

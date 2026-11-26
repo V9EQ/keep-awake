@@ -48,16 +48,14 @@ function ownName() {
     return Gio.bus_own_name_on_connection(bus, NAME, Gio.BusNameOwnerFlags.NONE, null, null);
 }
 
-async function startRequest(index, allowScreenBlanking = false) {
-    controller.toggle(allowScreenBlanking);
+async function startRequest(index) {
+    controller.activate();
     assert(controller.state === State.STARTING, 'Expected pending state on activation');
-    controller.toggle(); // A duplicate click must not start a second request.
+    controller.activate(); // A duplicate activation must not start a second request.
     await waitFor(() => requests.length === index + 1, `Missing request ${index + 1}`);
     const request = requests[index];
-    const flags = allowScreenBlanking ? 4 : 8;
-    assert(JSON.stringify(request.parameters) === JSON.stringify([APP, 0, REASON, flags]),
-        'Wrong Inhibit arguments');
-    assert(controller.allowsScreenBlanking === allowScreenBlanking, 'Wrong active inhibition policy');
+    assert(JSON.stringify(request.parameters) === JSON.stringify([APP, 0, REASON, 8]),
+        'Expected an idle inhibitor');
     assert(request.invocation.get_sender() !== bus.get_unique_name(), 'Expected a private client');
     return request;
 }
@@ -76,7 +74,7 @@ try {
     const first = await startRequest(0);
     accept(first);
     await waitForState(State.ON);
-    controller.toggle();
+    controller.deactivate();
     await waitForState(State.OFF);
     await waitFor(() => !first.connected, 'Toggle off did not disconnect its client');
 
@@ -109,12 +107,11 @@ try {
     await waitForState(State.OFF);
     assert(requests.length === 5, 'Keep Awake unexpectedly reactivated');
 
-    const blanking = await startRequest(5, true);
+    const cancelled = await startRequest(5);
     controller.deactivate();
     await waitForState(State.OFF);
-    assert(!controller.allowsScreenBlanking, 'Deactivated request retained its policy');
-    await waitFor(() => !blanking.connected, 'Deactivation did not release the pending client');
-    accept(blanking);
+    await waitFor(() => !cancelled.connected, 'Deactivation did not release the pending client');
+    accept(cancelled);
     print('Session inhibitor integration checks passed');
 } finally {
     controller?.destroy();

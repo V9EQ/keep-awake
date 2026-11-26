@@ -13,20 +13,6 @@ export default class KeepAwakePreferences extends ExtensionPreferences {
         const settings = this.getSettings();
         const page = new Adw.PreferencesPage({title: _('General')});
         const power = new Adw.PreferencesGroup({title: _('Power')});
-        const startup = new Adw.SwitchRow({
-            title: _('Start Keep Awake automatically'),
-            subtitle: _('Applies the next time the extension is enabled.'),
-        });
-        settings.bind(Key.START_ACTIVE, startup, 'active', Gio.SettingsBindFlags.DEFAULT);
-        power.add(startup);
-
-        const row = new Adw.SwitchRow({
-            title: _('Allow screen blanking'),
-            subtitle: _('Applies next time Keep Awake turns on.'),
-        });
-        settings.bind(Key.ALLOW_SCREEN_BLANKING, row, 'active', Gio.SettingsBindFlags.DEFAULT);
-        power.add(row);
-
         const lid = new Adw.SwitchRow({
             title: _('Suspend on lid close with an external monitor'),
             subtitle: _('Applies even when the Keep Awake tile is off. Does not prevent wake-ups.'),
